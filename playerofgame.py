@@ -21,4 +21,5 @@ def createPlayer():
     player.dy = 0
     player.jumpPower = -13
     player.onGround = False
+    player.jumpBoostPower = -65
     return player

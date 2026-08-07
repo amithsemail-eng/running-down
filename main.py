@@ -8,7 +8,8 @@ from platforms import createPlatforms
 app.stepPerSec = 30
 app.width = 819
 app.height = 820
-app.speedBoostTimer = 0
+app.boostTimer = 0
+app.boostTimerLength = 10
 # left top width height
 app.gameOver = False
 
@@ -23,9 +24,8 @@ platforms = createPlatforms()
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
 
 
-def startSpeedBoost():
-    player.speed = player.boostSpeed
-    app.speedBoostTimer = 10 * app.stepPerSec
+def startBoostTimer():
+    app.boostTimer = app.boostTimerLength * app.stepPerSec
 
 
 def winner():
@@ -90,14 +90,14 @@ def onStep():
     for chest in chests:
         if player.hitsShape(chest.shape):
             chest.open()
-            startSpeedBoost()
+            chest.item.effect()
 
     winning_platform = platforms[14]
     if player.hitsShape(winning_platform):
         winner()
-    if app.speedBoostTimer > 0:
-        app.speedBoostTimer -= 1
-        if app.speedBoostTimer == 0:
+    if app.boostTimer > 0:
+        app.boostTimer -= 1
+        if app.boostTimer == 0:
             player.speed = player.normSpeed
 
     if app.gameOver:
