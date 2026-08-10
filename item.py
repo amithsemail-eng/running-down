@@ -1,16 +1,14 @@
-from main import startBoostTimer, player
-
 BUFF = "buff"
 DEBUFF = "debuff"
 KEY = "key"
 
 
-def startSpeedBoost():
+def startSpeedBoost(player, startBoostTimer):
     player.speed = player.boostSpeed
     startBoostTimer()
 
 
-def startJumpPowerBoost():
+def startJumpPowerBoost(player, startBoostTimer):
     player.jumpPower = player.jumpBoostPower
     startBoostTimer()
 
@@ -23,4 +21,4 @@ class Item:
         self.effect = effect
 
 
-powerBoost = Item("Speed Boost", BUFF, effect=startSpeedBoost)
+speedPowerBoost = Item("Speed Boost", BUFF, effect=startSpeedBoost)

@@ -1,6 +1,6 @@
 import cmu_graphics
 from cmu_graphics import *
-from item import powerBoost
+from item import speedPowerBoost
 
 #  chest will have either 8 sec extra speed
 
@@ -53,5 +53,5 @@ class Chest:
 
 
 def createChests():
-    chests = [Chest(120, 220, powerBoost)]
+    chests = [Chest(120, 220, speedPowerBoost)]
     return chests

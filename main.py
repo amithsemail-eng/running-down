@@ -1,6 +1,6 @@
 import cmu_graphics
-from playerofgame import createPlayer
 from cmu_graphics import *
+from playerofgame import createPlayer
 from screens import createScreens
 from chest import createChests
 from platforms import createPlatforms
@@ -18,10 +18,10 @@ backgroundMusic.play(loop=False)
 jumpSound = Sound("sounds/jump.flac")
 
 player = createPlayer()
-chests = createChests()
 platforms = createPlatforms()
-
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
+
+chests = createChests()
 
 
 def startBoostTimer():
@@ -55,6 +55,7 @@ def onKeyPress(key):
 
 
 def onStep():
+
     player.onGround = False
     if player.left < 0:
         player.left = 0
@@ -90,9 +91,9 @@ def onStep():
     for chest in chests:
         if player.hitsShape(chest.shape):
             chest.open()
-            chest.item.effect()
+            chest.item.effect(player, startBoostTimer)
 
-    winning_platform = platforms[14]
+    winning_platform = platforms[-1]
     if player.hitsShape(winning_platform):
         winner()
     if app.boostTimer > 0:
