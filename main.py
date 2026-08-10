@@ -1,6 +1,6 @@
 import cmu_graphics
-from playerofgame import createPlayer
 from cmu_graphics import *
+from playerofgame import createPlayer
 from screens import createScreens
 from chest import createChests
 from platforms import createPlatforms
@@ -8,7 +8,8 @@ from platforms import createPlatforms
 app.stepPerSec = 30
 app.width = 819
 app.height = 820
-app.speedBoostTimer = 0
+app.boostTimer = 0
+app.boostTimerLength = 10
 # left top width height
 app.gameOver = False
 
@@ -17,15 +18,14 @@ backgroundMusic.play(loop=False)
 jumpSound = Sound("sounds/jump.flac")
 
 player = createPlayer()
-chests = createChests()
 platforms = createPlatforms()
-
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
 
+chests = createChests()
 
-def startSpeedBoost():
-    player.speed = player.boostSpeed
-    app.speedBoostTimer = 10 * app.stepPerSec
+
+def startBoostTimer():
+    app.boostTimer = app.boostTimerLength * app.stepPerSec
 
 
 def winner():
@@ -55,6 +55,7 @@ def onKeyPress(key):
 
 
 def onStep():
+
     player.onGround = False
     if player.left < 0:
         player.left = 0
@@ -90,14 +91,14 @@ def onStep():
     for chest in chests:
         if player.hitsShape(chest.shape):
             chest.open()
-            startSpeedBoost()
+            chest.item.effect(player, startBoostTimer)
 
-    winning_platform = platforms[14]
+    winning_platform = platforms[-1]
     if player.hitsShape(winning_platform):
         winner()
-    if app.speedBoostTimer > 0:
-        app.speedBoostTimer -= 1
-        if app.speedBoostTimer == 0:
+    if app.boostTimer > 0:
+        app.boostTimer -= 1
+        if app.boostTimer == 0:
             player.speed = player.normSpeed
 
     if app.gameOver:

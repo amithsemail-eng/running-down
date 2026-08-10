@@ -1,5 +1,6 @@
 import cmu_graphics
 from cmu_graphics import *
+from item import speedPowerBoost
 
 #  chest will have either 8 sec extra speed
 
@@ -41,9 +42,10 @@ def drawTreasureChest(x, y):
 
 
 class Chest:
-    def __init__(self, x, y):
+    def __init__(self, x, y, item):
         self.shape = drawTreasureChest(x, y)
         self.opened = False
+        self.item = item
 
     def open(self):
         self.opened = True
@@ -51,5 +53,5 @@ class Chest:
 
 
 def createChests():
-    chests = [Chest(120, 220)]
+    chests = [Chest(120, 220, speedPowerBoost)]
     return chests
