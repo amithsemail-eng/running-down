@@ -71,7 +71,7 @@ def onStep():
         restart()
     if player.top <= 0:
         player.top = 0
-
+    print(player.speed)
     for platform in platforms:
         horizontallyOverlapping = (
             player.right > platform.left and player.left < platform.right
