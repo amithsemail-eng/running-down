@@ -13,8 +13,8 @@ def createPlayer():
         Circle(61, 292, 2, fill="black"),
         Circle(69, 292, 2, fill="black"),
     )
-    player.centerX = 100
-    player.centerY = 200
+    player.centerX = 50
+    player.centerY = 710
     player.speed = 30
     player.boostSpeed = 50
     player.normSpeed = player.speed
