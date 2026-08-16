@@ -4,6 +4,7 @@ from playerofgame import createPlayer
 from screens import createScreens
 from chest import createChests
 from platforms import createPlatforms
+from obstacles import createObstacles
 
 app.stepPerSec = 30
 app.width = 819
@@ -22,6 +23,7 @@ platforms = createPlatforms()
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
 
 chests = createChests()
+obstacles = createObstacles()
 
 
 def startBoostTimer():
@@ -64,6 +66,8 @@ def onStep():
     # previous location
     oldTop = player.top
     oldBottom = player.bottom
+    oldLeft = player.left
+    oldRight = player.right
     # gravity
     player.dy += 0.6
     player.centerY += player.dy
@@ -71,12 +75,17 @@ def onStep():
         restart()
     if player.top <= 0:
         player.top = 0
-    print(player.speed)
+    for obstacle in obstacles:
+        if player.hitsShape(obstacle):
+            restart()
+
     for platform in platforms:
         horizontallyOverlapping = (
             player.right > platform.left and player.left < platform.right
         )
-
+        verticallyOverlapping = (
+            player.bottom > platform.top and player.top < platform.bottom
+        )
         if horizontallyOverlapping:
 
             if player.dy >= 0 and oldBottom <= platform.top <= player.bottom:
