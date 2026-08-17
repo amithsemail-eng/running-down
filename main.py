@@ -4,7 +4,7 @@ from playerofgame import createPlayer
 from screens import createScreens
 from chest import createChests
 from platforms import createPlatforms
-from obstacles import createObstacles
+from obstacles import createObstacles, createAxes
 
 app.stepPerSec = 30
 app.width = 819
@@ -24,6 +24,7 @@ deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.
 
 chests = createChests()
 obstacles = createObstacles()
+axes = createAxes()
 
 
 def startBoostTimer():
@@ -102,6 +103,10 @@ def onStep():
         player.top = 0
     for obstacle in obstacles:
         if player.hitsShape(obstacle):
+            restart()
+    for ax in axes:
+        ax.update()
+        if player.hitsShape(ax.blade):
             restart()
 
     for platform in platforms:
