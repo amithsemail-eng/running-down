@@ -45,11 +45,38 @@ def restart():
     app.gameOver = True
 
 
+def movePlayerX(amount):
+    oldLeft = player.left
+    oldRight = player.right
+
+    player.centerX += amount
+
+    for platform in platforms:
+        verticallyOverlapping = (
+            player.bottom > platform.top and player.top < platform.bottom
+        )
+
+        if not verticallyOverlapping:
+            continue
+
+        # Moving right: hit left side of platform
+        if amount > 0:
+            if oldRight <= platform.left and player.right >= platform.left:
+                player.right = platform.left
+
+        # Moving left: hit right side of platform
+        elif amount < 0:
+            if oldLeft >= platform.right and player.left <= platform.right:
+                player.left = platform.right
+
+
 def onKeyPress(key):
     if "left" == key or "a" == key:
-        player.centerX -= player.speed
+        movePlayerX(-player.speed)
+
     if "right" == key or "d" == key:
-        player.centerX += player.speed
+        movePlayerX(player.speed)
+
     if "space" == key and player.onGround:
         jumpSound.play()
         player.dy = player.jumpPower
@@ -66,8 +93,6 @@ def onStep():
     # previous location
     oldTop = player.top
     oldBottom = player.bottom
-    oldLeft = player.left
-    oldRight = player.right
     # gravity
     player.dy += 0.6
     player.centerY += player.dy
@@ -83,19 +108,25 @@ def onStep():
         horizontallyOverlapping = (
             player.right > platform.left and player.left < platform.right
         )
-        verticallyOverlapping = (
-            player.bottom > platform.top and player.top < platform.bottom
-        )
-        if horizontallyOverlapping:
 
-            if player.dy >= 0 and oldBottom <= platform.top <= player.bottom:
-                player.bottom = platform.top
-                player.dy = 0
-                player.onGround = True
+        # Land on top of platform
+        if (
+            horizontallyOverlapping
+            and player.dy >= 0
+            and oldBottom <= platform.top <= player.bottom
+        ):
+            player.bottom = platform.top
+            player.dy = 0
+            player.onGround = True
 
-            elif player.dy < 0 and oldTop >= platform.bottom >= player.top:
-                player.top = platform.bottom
-                player.dy = 0
+        # Hit underside of platform
+        elif (
+            horizontallyOverlapping
+            and player.dy < 0
+            and oldTop >= platform.bottom >= player.top
+        ):
+            player.top = platform.bottom
+            player.dy = 0
 
     for chest in chests:
         if player.hitsShape(chest.shape):
