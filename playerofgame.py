@@ -23,3 +23,6 @@ def createPlayer():
     player.onGround = False
     player.jumpBoostPower = -65
     return player
+
+
+# 100 hp if hit spike - 20 hp if hit ax -25 hp and pushback

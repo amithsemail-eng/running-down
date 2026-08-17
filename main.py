@@ -5,6 +5,7 @@ from screens import createScreens
 from chest import createChests
 from platforms import createPlatforms
 from obstacles import createObstacles, createAxes
+from healthbar import createHealthBar
 
 app.stepPerSec = 30
 app.width = 819
@@ -19,6 +20,7 @@ backgroundMusic.play(loop=False)
 jumpSound = Sound("sounds/jump.flac")
 
 player = createPlayer()
+healthBar = createHealthBar
 platforms = createPlatforms()
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
 
