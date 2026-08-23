@@ -75,9 +75,11 @@ def movePlayerX(amount):
 
 def onKeyPress(key):
     if "left" == key or "a" == key:
+        player.faceLeft()
         movePlayerX(-player.speed)
 
     if "right" == key or "d" == key:
+        player.faceRight()
         movePlayerX(player.speed)
 
     if "space" == key and player.onGround:
@@ -87,7 +89,7 @@ def onKeyPress(key):
 
 
 def onStep():
-
+    player.updateTurnAnimation()
     player.onGround = False
     if player.left < 0:
         player.left = 0
@@ -106,10 +108,12 @@ def onStep():
     for obstacle in obstacles:
         if player.hitsShape(obstacle):
             player.takeDamage(15, healthBar, restart)
+            healthBar.update(restart)
     for ax in axes:
         ax.update()
         if player.hitsShape(ax.blade):
             player.takeDamage(25, healthBar, restart)
+            healthBar.update(restart)
 
     for platform in platforms:
         horizontallyOverlapping = (
