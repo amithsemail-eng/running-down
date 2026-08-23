@@ -20,7 +20,7 @@ backgroundMusic.play(loop=False)
 jumpSound = Sound("sounds/jump.flac")
 
 player = createPlayer()
-healthBar = createHealthBar
+healthBar = createHealthBar(player)
 platforms = createPlatforms()
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
 
@@ -105,11 +105,11 @@ def onStep():
         player.top = 0
     for obstacle in obstacles:
         if player.hitsShape(obstacle):
-            restart()
+            player.takeDamage(15, healthBar, restart)
     for ax in axes:
         ax.update()
         if player.hitsShape(ax.blade):
-            restart()
+            player.takeDamage(25, healthBar, restart)
 
     for platform in platforms:
         horizontallyOverlapping = (

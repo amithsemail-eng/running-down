@@ -19,12 +19,22 @@ class HealthBar:
         self.bar = Rect(20, 20, self.maxWidth, 25, fill="limeGreen", border="black")
 
         self.label = Label(
-            str(player.health) + " / " + str(player.maxHealth),
+            str(player.health) + " // " + str(player.maxHealth),
             120,
             32,
             fill="white",
             bold=True,
         )
+
+    def update(self, restart):
+        healthPercent = self.player.health / self.player.maxHealth
+        if self.player.health <= 0:
+            self.bar.visible = False
+            restart()
+        else:
+            self.bar.visible = True
+            self.bar.width = self.maxWidth * healthPercent
+        self.label.value = str(self.player.health) + " // " + str(self.player.maxHealth)
 
 
 def createHealthBar(player):
