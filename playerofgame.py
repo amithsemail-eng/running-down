@@ -13,6 +13,15 @@ def createPlayer():
         Circle(61, 292, 2, fill="black"),
         Circle(69, 292, 2, fill="black"),
     )
+
+    def takeDamage(damage, healthBar, restart):
+
+        if player.health - damage < 0:
+            player.health = 0
+        else:
+            player.health -= damage
+        healthBar.update(restart)
+
     player.centerX = 50
     player.centerY = 710
     player.speed = 30
@@ -22,4 +31,10 @@ def createPlayer():
     player.jumpPower = -13
     player.onGround = False
     player.jumpBoostPower = -65
+    player.health = 100
+    player.maxHealth = 100
+    player.takeDamage = takeDamage
     return player
+
+
+# 100 hp if hit spike - 20 hp if hit ax -25 hp and pushback
