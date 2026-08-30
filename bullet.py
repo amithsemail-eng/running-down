@@ -13,6 +13,9 @@ class Bullet:
         else:
             self.shape.centerX -= self.speed
 
+    def isOffScreen(self, screenWidth):
+        return self.shape.right < 0 or self.shape.left > screenWidth
+
 
 def createBullet(player):
     x, y = player.getBulletStart()

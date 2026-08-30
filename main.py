@@ -144,6 +144,9 @@ def onStep():
             player.dy = 0
     for bullet in bullets:
         bullet.update()
+        if bullet.isOffScreen(app.width):
+            bullet.shape.visible = False
+            bullets.remove(bullet)
     for chest in chests:
         if player.hitsShape(chest.shape):
             chest.open()
