@@ -91,6 +91,12 @@ def onKeyPress(key):
     if "1" == key:
         bullets.append(createBullet(player))
 
+    if key == "down":
+        if player.isCrouching:
+            player.stand()
+        else:
+            player.crouch()
+
 
 def onStep():
     player.updateTurnAnimation()
