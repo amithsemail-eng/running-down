@@ -37,6 +37,12 @@ def createPlayer():
         Circle(69, 292, 2, fill="black"),
     )
 
+    def getBulletStart():
+        if player.facing == "right":
+            return blaster.right + 5, blaster.centerY
+        else:
+            return blaster.left - 5, blaster.centerY
+
     def takeDamage(damage, healthBar, restart):
         if player.health - damage < 0:
             player.health = 0
@@ -100,7 +106,7 @@ def createPlayer():
 
     player.centerX = 50
     player.centerY = 710
-
+    player.getBulletStart = getBulletStart
     player.speed = 30
     player.boostSpeed = 50
     player.normSpeed = player.speed

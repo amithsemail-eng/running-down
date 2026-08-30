@@ -6,6 +6,7 @@ from chest import createChests
 from platforms import createPlatforms
 from obstacles import createObstacles, createAxes
 from healthbar import createHealthBar
+from bullet import createBullet
 
 app.stepPerSec = 30
 app.width = 819
@@ -27,6 +28,7 @@ deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.
 chests = createChests()
 obstacles = createObstacles()
 axes = createAxes()
+bullets = []
 
 
 def startBoostTimer():
@@ -86,6 +88,8 @@ def onKeyPress(key):
         jumpSound.play()
         player.dy = player.jumpPower
         player.onGround = False
+    if "1" == key:
+        bullets.append(createBullet(player))
 
 
 def onStep():
@@ -138,7 +142,8 @@ def onStep():
         ):
             player.top = platform.bottom
             player.dy = 0
-
+    for bullet in bullets:
+        bullet.update()
     for chest in chests:
         if player.hitsShape(chest.shape):
             chest.open()
