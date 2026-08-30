@@ -6,6 +6,7 @@ from chest import createChests
 from platforms import createPlatforms
 from obstacles import createObstacles, createAxes
 from healthbar import createHealthBar
+from bullet import createBullet
 
 app.stepPerSec = 30
 app.width = 819
@@ -27,6 +28,7 @@ deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.
 chests = createChests()
 obstacles = createObstacles()
 axes = createAxes()
+bullets = []
 
 
 def startBoostTimer():
@@ -75,19 +77,23 @@ def movePlayerX(amount):
 
 def onKeyPress(key):
     if "left" == key or "a" == key:
+        player.faceLeft()
         movePlayerX(-player.speed)
 
     if "right" == key or "d" == key:
+        player.faceRight()
         movePlayerX(player.speed)
 
     if "space" == key and player.onGround:
         jumpSound.play()
         player.dy = player.jumpPower
         player.onGround = False
+    if "1" == key:
+        bullets.append(createBullet(player))
 
 
 def onStep():
-
+    player.updateTurnAnimation()
     player.onGround = False
     if player.left < 0:
         player.left = 0
@@ -106,10 +112,12 @@ def onStep():
     for obstacle in obstacles:
         if player.hitsShape(obstacle):
             player.takeDamage(15, healthBar, restart)
+            healthBar.update(restart)
     for ax in axes:
         ax.update()
         if player.hitsShape(ax.blade):
             player.takeDamage(25, healthBar, restart)
+            healthBar.update(restart)
 
     for platform in platforms:
         horizontallyOverlapping = (
@@ -134,7 +142,11 @@ def onStep():
         ):
             player.top = platform.bottom
             player.dy = 0
-
+    for bullet in bullets:
+        bullet.update()
+        if bullet.isOffScreen(app.width):
+            bullet.shape.visible = False
+            bullets.remove(bullet)
     for chest in chests:
         if player.hitsShape(chest.shape):
             chest.open()
