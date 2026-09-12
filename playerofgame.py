@@ -1,4 +1,5 @@
 import cmu_graphics
+import math
 from cmu_graphics import *
 
 
@@ -54,7 +55,20 @@ def createPlayer():
         else:
             return blaster.left - 5, blaster.centerY
 
+    def getBounds():
+        # Keep the gun and changing leg width out of platform collision
+        return body.left - 2, head.top, body.right + 2, player.bottom
+
+    def attachBlaster():
+        # wrist is 4.5 pixels behind the blaster's centre in its original pose.
+        angle = math.radians(blaster.rotateAngle)
+        blaster.centerX = weaponArm.x2 + 4.5 * math.cos(angle)
+        blaster.centerY = weaponArm.y2 + 4.5 * math.sin(angle)
+
     def takeDamage(damage, healthBar, restart):
+        if player.damageCooldown > 0:
+            return
+        player.damageCooldown = app.stepsPerSecond
         if player.health - damage < 0:
             player.health = 0
         else:
@@ -83,6 +97,10 @@ def createPlayer():
 
         blaster.rotateAngle = 165
         player.turnTarget = 180
+        attachBlaster()
+
+        if player.isCrouching:
+            updateCrouchLegs()
 
     def faceRight():
         if player.facing == "right":
@@ -105,6 +123,10 @@ def createPlayer():
 
         blaster.rotateAngle = 15
         player.turnTarget = 0
+        attachBlaster()
+
+        if player.isCrouching:
+            updateCrouchLegs()
 
     def updateTurnAnimation():
         if player.turnTarget == 180:
@@ -115,63 +137,75 @@ def createPlayer():
             if blaster.rotateAngle > 0:
                 blaster.rotateAngle -= 5
 
+        attachBlaster()
+
+    def updateCrouchLegs():
+        direction = 1 if player.facing == "right" else -1
+        x = body.centerX
+
+        # Rear knee down, front foot planted; mirror the pose when turning.
+        leftUpperLeg.x1 = x - direction * 5
+        leftUpperLeg.y1 = body.bottom
+        leftUpperLeg.x2 = x - direction * 12
+        leftUpperLeg.y2 = body.bottom + 6
+
+        leftLowerLeg.x1 = x - direction * 12
+        leftLowerLeg.y1 = body.bottom + 6
+        leftLowerLeg.x2 = x - direction * 23
+        leftLowerLeg.y2 = body.bottom + 6
+
+        rightUpperLeg.x1 = x + direction * 5
+        rightUpperLeg.y1 = body.bottom
+        rightUpperLeg.x2 = x + direction * 18
+        rightUpperLeg.y2 = body.bottom - 6
+
+        rightLowerLeg.x1 = x + direction * 18
+        rightLowerLeg.y1 = body.bottom - 6
+        rightLowerLeg.x2 = x + direction * 18
+        rightLowerLeg.y2 = body.bottom + 6
+
     def crouch():
         if player.isCrouching:
             return
 
+        oldBottom = player.bottom
         player.isCrouching = True
 
-        head.centerY += 10
-        leftEye.centerY += 10
-        rightEye.centerY += 10
-        body.centerY += 10
+        head.centerY += 14
+        leftEye.centerY += 14
+        rightEye.centerY += 14
+        body.centerY += 14
 
-        weaponArm.y1 += 10
-        weaponArm.y2 += 10
+        weaponArm.y1 += 14
+        weaponArm.y2 += 14
 
-        otherArm.y1 += 10
-        otherArm.y2 += 10
+        otherArm.y1 += 14
+        otherArm.y2 += 14
 
-        blaster.centerY += 10
+        blaster.centerY += 14
 
-        leftUpperLeg.x1 = body.left + 5
-        leftUpperLeg.y1 = body.bottom
-        leftUpperLeg.x2 = body.left
-        leftUpperLeg.y2 = body.bottom + 8
-
-        leftLowerLeg.x1 = body.left
-        leftLowerLeg.y1 = body.bottom + 8
-        leftLowerLeg.x2 = body.left - 12
-        leftLowerLeg.y2 = body.bottom + 8
-
-        rightUpperLeg.x1 = body.right - 5
-        rightUpperLeg.y1 = body.bottom
-        rightUpperLeg.x2 = body.right + 5
-        rightUpperLeg.y2 = body.bottom + 8
-
-        rightLowerLeg.x1 = body.right + 5
-        rightLowerLeg.y1 = body.bottom + 8
-        rightLowerLeg.x2 = body.right + 18
-        rightLowerLeg.y2 = body.bottom + 8
+        updateCrouchLegs()
+        player.bottom = oldBottom
 
     def stand():
         if not player.isCrouching:
             return
 
+        oldBottom = player.bottom
         player.isCrouching = False
 
-        head.centerY -= 10
-        leftEye.centerY -= 10
-        rightEye.centerY -= 10
-        body.centerY -= 10
+        head.centerY -= 14
+        leftEye.centerY -= 14
+        rightEye.centerY -= 14
+        body.centerY -= 14
 
-        weaponArm.y1 -= 10
-        weaponArm.y2 -= 10
+        weaponArm.y1 -= 14
+        weaponArm.y2 -= 14
 
-        otherArm.y1 -= 10
-        otherArm.y2 -= 10
+        otherArm.y1 -= 14
+        otherArm.y2 -= 14
 
-        blaster.centerY -= 10
+        blaster.centerY -= 14
 
         leftUpperLeg.x1 = body.left + 5
         leftUpperLeg.y1 = body.bottom
@@ -193,18 +227,23 @@ def createPlayer():
         rightLowerLeg.x2 = body.right + 3
         rightLowerLeg.y2 = body.bottom + 20
 
+        player.bottom = oldBottom
+
     player.centerX = 50
     player.centerY = 710
 
+    player.getBounds = getBounds
     player.getBulletStart = getBulletStart
     player.speed = 30
     player.boostSpeed = 50
     player.normSpeed = player.speed
     player.dy = 0
     player.jumpPower = -13
+    player.normJumpPower = player.jumpPower
     player.onGround = False
     player.jumpBoostPower = -65
 
+    player.damageCooldown = 0
     player.health = 100
     player.maxHealth = 100
 
