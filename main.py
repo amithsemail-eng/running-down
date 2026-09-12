@@ -7,6 +7,7 @@ from platforms import createPlatforms
 from obstacles import createObstacles, createAxes
 from healthbar import createHealthBar
 from bullet import createBullet
+from alien import createAlien
 
 app.stepsPerSecond = 30
 app.width = 819
@@ -17,14 +18,14 @@ app.boostTimerLength = 10
 app.gameOver = False
 
 backgroundMusic = Sound("sounds/jumphigherrunfaster.ogg")
-backgroundMusic.play(loop=False)
+backgroundMusic.play(loop=True)
 jumpSound = Sound("sounds/jump.flac")
 
 player = createPlayer()
 healthBar = createHealthBar(player)
 platforms = createPlatforms()
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
-
+enemy = createAlien(280, 350, scale=0.8)
 chests = createChests()
 obstacles = createObstacles()
 axes = createAxes()
