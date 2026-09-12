@@ -8,7 +8,7 @@ from obstacles import createObstacles, createAxes
 from healthbar import createHealthBar
 from bullet import createBullet
 
-app.stepPerSec = 30
+app.stepsPerSecond = 30
 app.width = 819
 app.height = 820
 app.boostTimer = 0
@@ -32,7 +32,7 @@ bullets = []
 
 
 def startBoostTimer():
-    app.boostTimer = app.boostTimerLength * app.stepPerSec
+    app.boostTimer = app.boostTimerLength * app.stepsPerSecond
 
 
 def winner():
@@ -41,41 +41,75 @@ def winner():
 
 
 def restart():
-    player.centerX = 0
-    player.centerY = 780
-    player.dy = 0
+    if app.gameOver:
+        return
     deathScreen.visible = True
     deathMessage.visible = True
+    deathScreen.toFront()
+    deathMessage.toFront()
     app.deathTimer = 300
     app.gameOver = True
 
 
-def movePlayerX(amount):
-    oldLeft = player.left
-    oldRight = player.right
+def resetPlayer():
+    player.stand()
+    player.faceRight()
+    player.updateTurnAnimation()
+    player.centerX = 50
+    player.bottom = platforms[0].top
+    player.dy = 0
+    player.onGround = True
+    player.health = player.maxHealth
+    player.damageCooldown = 0
+    player.speed = player.normSpeed
+    player.jumpPower = player.normJumpPower
+    app.boostTimer = 0
+    healthBar.update(restart)
+    for bullet in bullets:
+        bullet.shape.visible = False
+    bullets.clear()
+    for chest in chests:
+        chest.opened = False
+        chest.shape.visible = True
+    deathScreen.visible = deathMessage.visible = False
+    winScreen.visible = winMessage.visible = False
+    app.gameOver = False
 
-    player.centerX += amount
 
+def tryStand():
+    if not player.isCrouching:
+        return True
+    left, top, right, bottom = player.getBounds()
     for platform in platforms:
-        verticallyOverlapping = (
-            player.bottom > platform.top and player.top < platform.bottom
-        )
+        if (right > platform.left and left < platform.right
+                and bottom > platform.top and top - 14 < platform.bottom):
+            return False
+    player.stand()
+    return True
 
-        if not verticallyOverlapping:
+
+def movePlayerX(amount):
+    left, top, right, bottom = player.getBounds()
+    for platform in platforms:
+        if bottom <= platform.top or top >= platform.bottom:
             continue
-
-        # Moving right: hit left side of platform
-        if amount > 0:
-            if oldRight <= platform.left and player.right >= platform.left:
-                player.right = platform.left
-
-        # Moving left: hit right side of platform
-        elif amount < 0:
-            if oldLeft >= platform.right and player.left <= platform.right:
-                player.left = platform.right
+        # Limit movement to the nearest wall, even at boosted speed.
+        if amount > 0 and right <= platform.left:
+            amount = min(amount, platform.left - right)
+        elif amount < 0 and left >= platform.right:
+            amount = max(amount, platform.right - left)
+    player.centerX += max(-left, min(amount, app.width - right))
+    left, top, right, bottom = player.getBounds()
+    player.onGround = any(
+        abs(bottom - platform.top) < 0.001
+        and right > platform.left and left < platform.right
+        for platform in platforms
+    )
 
 
 def onKeyPress(key):
+    if app.gameOver:
+        return
     if "left" == key or "a" == key:
         player.faceLeft()
         movePlayerX(-player.speed)
@@ -84,64 +118,69 @@ def onKeyPress(key):
         player.faceRight()
         movePlayerX(player.speed)
 
-    if "space" == key and player.onGround:
+    if "space" == key and player.onGround and tryStand():
         jumpSound.play()
         player.dy = player.jumpPower
         player.onGround = False
     if "1" == key:
         bullets.append(createBullet(player))
 
+    if key == "down":
+        if player.isCrouching:
+            tryStand()
+        else:
+            player.crouch()
+
 
 def onStep():
+    if app.gameOver:
+        app.deathTimer -= 1
+        if app.deathTimer <= 0:
+            resetPlayer()
+        return
+
+    if player.damageCooldown > 0:
+        player.damageCooldown -= 1
     player.updateTurnAnimation()
     player.onGround = False
-    if player.left < 0:
-        player.left = 0
-    if player.right > app.width:
-        player.right = app.width
-    # previous location
-    oldTop = player.top
-    oldBottom = player.bottom
-    # gravity
+    left, oldTop, right, oldBottom = player.getBounds()
+    # Find the nearest platform crossed before applying gravity movement
     player.dy += 0.6
-    player.centerY += player.dy
+    movement = player.dy
+    landedPlatform = None
+    for platform in platforms:
+        if right <= platform.left or left >= platform.right:
+            continue
+        if player.dy >= 0 and oldBottom <= platform.top:
+            gap = platform.top - oldBottom
+            if gap <= movement:
+                movement = gap
+                landedPlatform = platform
+        elif player.dy < 0 and oldTop >= platform.bottom:
+            movement = max(movement, platform.bottom - oldTop)
+    player.centerY += movement
+    if landedPlatform is not None:
+        player.dy = 0
+        player.onGround = True
+    elif movement != player.dy:
+        player.dy = 0
+
     if player.bottom >= app.height:
         restart()
-    if player.top <= 0:
-        player.top = 0
+        return
+    # Allow the head above the viewport so the y=30 platform is reachable
     for obstacle in obstacles:
         if player.hitsShape(obstacle):
             player.takeDamage(15, healthBar, restart)
-            healthBar.update(restart)
+            if app.gameOver:
+                return
     for ax in axes:
         ax.update()
         if player.hitsShape(ax.blade):
             player.takeDamage(25, healthBar, restart)
-            healthBar.update(restart)
+            if app.gameOver:
+                return
 
-    for platform in platforms:
-        horizontallyOverlapping = (
-            player.right > platform.left and player.left < platform.right
-        )
-
-        # Land on top of platform
-        if (
-            horizontallyOverlapping
-            and player.dy >= 0
-            and oldBottom <= platform.top <= player.bottom
-        ):
-            player.bottom = platform.top
-            player.dy = 0
-            player.onGround = True
-
-        # Hit underside of platform
-        elif (
-            horizontallyOverlapping
-            and player.dy < 0
-            and oldTop >= platform.bottom >= player.top
-        ):
-            player.top = platform.bottom
-            player.dy = 0
     for bullet in bullets:
         bullet.update()
         if bullet.isOffScreen(app.width):
@@ -153,19 +192,11 @@ def onStep():
             chest.item.effect(player, startBoostTimer)
 
     winning_platform = platforms[-1]
-    if player.hitsShape(winning_platform):
+    if landedPlatform is winning_platform:
         winner()
     if app.boostTimer > 0:
         app.boostTimer -= 1
         if app.boostTimer == 0:
             player.speed = player.normSpeed
-
-    if app.gameOver:
-        app.deathTimer -= 1
-        if app.deathTimer <= 0:
-            deathScreen.visible = False
-            deathMessage.visible = False
-            app.gameOver = False
-
 
 cmu_graphics.run()
