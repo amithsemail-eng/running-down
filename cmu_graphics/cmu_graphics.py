@@ -750,6 +750,7 @@ class App(object):
             pygame.K_RCTRL: "ctrl",
             pygame.K_LCTRL: "ctrl",
             pygame.K_KP1: "1",
+            pygame.K_KP0: "0",
         }
 
         shiftMap = {

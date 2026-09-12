@@ -1,6 +1,7 @@
 import cmu_graphics
 import math
 from cmu_graphics import *
+from sword import Sword
 
 
 def drawWristBlaster():
@@ -56,11 +57,11 @@ def createPlayer():
             return blaster.left - 5, blaster.centerY
 
     def getBounds():
-        # Keep the gun and changing leg width out of platform collision
+        # Keep the gun and changing leg width out of platform collisions.
         return body.left - 2, head.top, body.right + 2, player.bottom
 
     def attachBlaster():
-        # wrist is 4.5 pixels behind the blaster's centre in its original pose.
+        # The wrist is 4.5 pixels behind the blaster's centre in its original pose.
         angle = math.radians(blaster.rotateAngle)
         blaster.centerX = weaponArm.x2 + 4.5 * math.cos(angle)
         blaster.centerY = weaponArm.y2 + 4.5 * math.sin(angle)
@@ -101,6 +102,7 @@ def createPlayer():
 
         if player.isCrouching:
             updateCrouchLegs()
+        player.sword.refresh()
 
     def faceRight():
         if player.facing == "right":
@@ -127,6 +129,7 @@ def createPlayer():
 
         if player.isCrouching:
             updateCrouchLegs()
+        player.sword.refresh()
 
     def updateTurnAnimation():
         if player.turnTarget == 180:
@@ -186,6 +189,7 @@ def createPlayer():
 
         updateCrouchLegs()
         player.bottom = oldBottom
+        player.sword.refresh()
 
     def stand():
         if not player.isCrouching:
@@ -228,6 +232,7 @@ def createPlayer():
         rightLowerLeg.y2 = body.bottom + 20
 
         player.bottom = oldBottom
+        player.sword.refresh()
 
     player.centerX = 50
     player.centerY = 710
@@ -257,5 +262,6 @@ def createPlayer():
     player.updateTurnAnimation = updateTurnAnimation
     player.crouch = crouch
     player.stand = stand
+    player.sword = Sword(player, body, otherArm)
 
     return player

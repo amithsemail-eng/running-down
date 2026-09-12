@@ -59,6 +59,7 @@ def resetPlayer():
     player.bottom = platforms[0].top
     player.dy = 0
     player.onGround = True
+    player.sword.reset()
     player.health = player.maxHealth
     player.damageCooldown = 0
     player.speed = player.normSpeed
@@ -81,8 +82,12 @@ def tryStand():
         return True
     left, top, right, bottom = player.getBounds()
     for platform in platforms:
-        if (right > platform.left and left < platform.right
-                and bottom > platform.top and top - 14 < platform.bottom):
+        if (
+            right > platform.left
+            and left < platform.right
+            and bottom > platform.top
+            and top - 14 < platform.bottom
+        ):
             return False
     player.stand()
     return True
@@ -99,10 +104,12 @@ def movePlayerX(amount):
         elif amount < 0 and left >= platform.right:
             amount = max(amount, platform.right - left)
     player.centerX += max(-left, min(amount, app.width - right))
+    player.sword.refresh()
     left, top, right, bottom = player.getBounds()
     player.onGround = any(
         abs(bottom - platform.top) < 0.001
-        and right > platform.left and left < platform.right
+        and right > platform.left
+        and left < platform.right
         for platform in platforms
     )
 
@@ -124,6 +131,10 @@ def onKeyPress(key):
         player.onGround = False
     if "1" == key:
         bullets.append(createBullet(player))
+    if key == "up":
+        player.sword.toggle()
+    if key == "0":
+        player.sword.swing()
 
     if key == "down":
         if player.isCrouching:
@@ -144,7 +155,7 @@ def onStep():
     player.updateTurnAnimation()
     player.onGround = False
     left, oldTop, right, oldBottom = player.getBounds()
-    # Find the nearest platform crossed before applying gravity movement
+    # Find the nearest platform crossed before applying gravity movement.
     player.dy += 0.6
     movement = player.dy
     landedPlatform = None
@@ -164,11 +175,12 @@ def onStep():
         player.onGround = True
     elif movement != player.dy:
         player.dy = 0
+    player.sword.update()
 
     if player.bottom >= app.height:
         restart()
         return
-    # Allow the head above the viewport so the y=30 platform is reachable
+    # Allow the head above the viewport so the y=30 platform is reachable.
     for obstacle in obstacles:
         if player.hitsShape(obstacle):
             player.takeDamage(15, healthBar, restart)
@@ -198,5 +210,6 @@ def onStep():
         app.boostTimer -= 1
         if app.boostTimer == 0:
             player.speed = player.normSpeed
+
 
 cmu_graphics.run()
