@@ -1,11 +1,15 @@
 from cmu_graphics import *
+import math
 
 
 def createAlien(x, y, scale=1):
+    if scale <= 0:
+        raise ValueError("Scale must be greater than zero")
+
     dark = rgb(7, 12, 23)
     blue = rgb(15, 27, 46)
     highlight = rgb(34, 51, 72)
-    bone = rgb(92, 112, 131)
+    bone = rgb(92, 112, 131) 
     teeth = rgb(188, 201, 207)
 
     alien = Group()
@@ -80,6 +84,8 @@ def createAlien(x, y, scale=1):
         Polygon(179, 285, 194, 286, 213, 300, 176, 300, fill=dark),
     )
 
+    farLeg, farFoot = list(alien.children)[-2:]
+
     # Far arm.
     alien.add(
         Polygon(
@@ -101,8 +107,9 @@ def createAlien(x, y, scale=1):
     )
 
     # Hunched body and neck.
+    bodyAnchor = Oval(175, 178, 57, 94, fill=blue, rotateAngle=18)
     alien.add(
-        Oval(175, 178, 57, 94, fill=blue, rotateAngle=18),
+        bodyAnchor,
         Oval(169, 218, 43, 42, fill=dark),
         Polygon(
             176,
@@ -168,9 +175,14 @@ def createAlien(x, y, scale=1):
         Polygon(154, 282, 170, 282, 190, 299, 149, 299, fill=blue, border=highlight),
     )
 
+    nearLeg, legHighlight, nearFoot = list(alien.children)[-3:]
+
     # Foot claws.
+    footClaws = []
     for cx in (165, 176, 187):
-        alien.add(Polygon(cx - 5, 294, cx, 303, cx + 9, 301, fill=teeth))
+        claw = Polygon(cx - 5, 294, cx, 303, cx + 9, 301, fill=teeth)
+        alien.add(claw)
+        footClaws.append(claw)
 
     # Near arm and hand.
     alien.add(
@@ -255,6 +267,135 @@ def createAlien(x, y, scale=1):
     alien.height *= scale
     alien.centerX = x
     alien.bottom = y
+
+    alien.normalWidth = alien.width
+    alien.direction = 1
+    alien.facing = "right"
+    alien.turning = False
+    alien.turnStage = None
+    alien.newDirection = 1
+    alien.turnSpeed = alien.normalWidth / 8
+
+    # Walking settings. Distances are scaled to match the alien.
+    alien.walkPhase = 0
+    alien.walkSpeed = 0.22
+    alien.strideLength = 16 * scale
+    alien.stepHeight = 10 * scale
+
+    # Remember the original leg shapes relative to the body.
+    # Keeping the hips still prevents the legs from coming detached.
+    legPoses = []
+    hipY = bodyAnchor.centerY + 47 * scale
+
+    def rememberLegPart(shape, phaseOffset, isFoot=False):
+        points = []
+        for px, py in shape.pointList:
+            weight = 1 if isFoot else max(0, min(1, (py - hipY) / (65 * scale)))
+            points.append((px - bodyAnchor.centerX,
+                           py - bodyAnchor.centerY, weight))
+        legPoses.append((shape, phaseOffset, points))
+
+    rememberLegPart(farLeg, math.pi)
+    rememberLegPart(farFoot, math.pi, True)
+    rememberLegPart(nearLeg, 0)
+    rememberLegPart(nearFoot, 0, True)
+    for claw in footClaws:
+        rememberLegPart(claw, 0, True)
+
+    highlightX = legHighlight.centerX - bodyAnchor.centerX
+    highlightY = legHighlight.centerY - bodyAnchor.centerY
+    highlightAngle = legHighlight.rotateAngle
+    highlightWeight = max(0, min(1, (legHighlight.centerY - hipY) / (65 * scale)))
+
+    def drawLegs(walking):
+        oldX, oldBottom = alien.centerX, alien.bottom
+        anchorX, anchorY = bodyAnchor.centerX, bodyAnchor.centerY
+        facing = 1 if alien.facing == "right" else -1
+
+        for shape, phaseOffset, originalPoints in legPoses:
+            phase = alien.walkPhase + phaseOffset
+            step = math.sin(phase) * alien.strideLength if walking else 0
+            lift = max(0, math.cos(phase)) * alien.stepHeight if walking else 0
+            shape.pointList = [
+                [anchorX + facing * (px + step * weight),
+                 anchorY + py - lift * weight]
+                for px, py, weight in originalPoints
+            ]
+
+        # The armor on the near leg follows that leg too.
+        step = math.sin(alien.walkPhase) * alien.strideLength if walking else 0
+        lift = max(0, math.cos(alien.walkPhase)) * alien.stepHeight if walking else 0
+        legHighlight.centerX = anchorX + facing * (highlightX + step * highlightWeight)
+        legHighlight.centerY = anchorY + highlightY - lift * highlightWeight
+        legHighlight.rotateAngle = facing * highlightAngle
+
+        # Keep the alien at its current world position and ground level.
+        alien.centerX = oldX
+        alien.bottom = oldBottom
+
+    def updateWalkAnimation(isWalking=True):
+        if alien.turning:
+            return
+        if isWalking:
+            alien.walkPhase = (alien.walkPhase + alien.walkSpeed) % (2 * math.pi)
+        else:
+            alien.walkPhase = 0
+        drawLegs(isWalking)
+
+    def mirror():
+        axis = alien.centerX
+        for shape in alien.children:
+            if isinstance(shape, Polygon):
+                shape.pointList = [
+                    [2 * axis - px, py] for px, py in shape.pointList
+                ]
+            elif isinstance(shape, Line):
+                x1, x2 = shape.x1, shape.x2
+                shape.x1 = 2 * axis - x1
+                shape.x2 = 2 * axis - x2
+            else:
+                shape.centerX = 2 * axis - shape.centerX
+                shape.rotateAngle *= -1
+
+    def startTurn(newDirection):
+        if newDirection not in (-1, 1):
+            raise ValueError("Direction must be -1 or 1")
+        if alien.turning or newDirection == alien.direction:
+            return
+
+        # Put both feet down before squeezing the drawing to turn.
+        updateWalkAnimation(False)
+        alien.turning = True
+        alien.turnStage = "shrinking"
+        alien.newDirection = newDirection
+
+    def updateTurnAnimation():
+        if not alien.turning:
+            return
+
+        oldX, oldBottom = alien.centerX, alien.bottom
+        minimumWidth = alien.normalWidth * 0.15
+
+        if alien.turnStage == "shrinking":
+            alien.width = max(minimumWidth, alien.width - alien.turnSpeed)
+            if alien.width <= minimumWidth:
+                mirror()
+                alien.direction = alien.newDirection
+                alien.facing = "right" if alien.direction == 1 else "left"
+                alien.turnStage = "expanding"
+
+        elif alien.turnStage == "expanding":
+            alien.width = min(alien.normalWidth, alien.width + alien.turnSpeed)
+            if alien.width >= alien.normalWidth:
+                alien.turning = False
+                alien.turnStage = None
+
+        alien.centerX = oldX
+        alien.bottom = oldBottom
+
+    alien.startTurn = startTurn
+    alien.updateTurnAnimation = updateTurnAnimation
+    alien.updateWalkAnimation = updateWalkAnimation
 
     return alien
 
