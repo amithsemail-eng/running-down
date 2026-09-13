@@ -25,7 +25,12 @@ player = createPlayer()
 healthBar = createHealthBar(player)
 platforms = createPlatforms()
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
-enemy = createAlien(280, 350, scale=0.8)
+enemyPlatform = platforms[3]
+enemy = createAlien(280, enemyPlatform.top, scale=0.55)
+enemy.speed = 3
+enemy.direction = 1
+enemy.leftLimit = 200
+enemy.rightLimit = enemyPlatform.right
 chests = createChests()
 obstacles = createObstacles()
 axes = createAxes()
@@ -115,6 +120,17 @@ def movePlayerX(amount):
     )
 
 
+def updateEnemy():
+    enemy.updateTurnAnimation()
+    if enemy.turning:
+        return
+    enemy.centerX += enemy.speed * enemy.direction
+    enemy.updateWalkAnimation(enemy.speed != 0)
+    if enemy.direction == 1 and enemy.centerX >= enemy.rightLimit:
+        enemy.centerX = enemy.rightLimit
+        enemy.startTurn(-1)
+
+
 def onKeyPress(key):
     if app.gameOver:
         return
@@ -175,7 +191,7 @@ def onStep():
         player.dy = 0
         player.onGround = True
     elif movement != player.dy:
-        player.dy = 0
+        player.dy = 0  
     player.sword.update()
 
     if player.bottom >= app.height:
@@ -193,7 +209,10 @@ def onStep():
             player.takeDamage(25, healthBar, restart)
             if app.gameOver:
                 return
+    if player.hitsShape(enemy):
+        player.takeDamage(5, healthBar, restart)
 
+    updateEnemy()
     for bullet in bullets:
         bullet.update()
         if bullet.isOffScreen(app.width):
