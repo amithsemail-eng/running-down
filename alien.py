@@ -360,41 +360,25 @@ def createAlien(x, y, scale=1):
     def startTurn(newDirection):
         if newDirection not in (-1, 1):
             raise ValueError("Direction must be -1 or 1")
-        if alien.turning or newDirection == alien.direction:
+
+        if newDirection == alien.direction:
             return
 
-        # Put both feet down before squeezing the drawing to turn.
+        # Put the legs in their resting pose before changing direction.
         updateWalkAnimation(False)
-        alien.turning = True
-        alien.turnStage = "shrinking"
-        alien.newDirection = newDirection
-
-    def updateTurnAnimation():
-        if not alien.turning:
-            return
-
         oldX, oldBottom = alien.centerX, alien.bottom
-        minimumWidth = alien.normalWidth * 0.15
 
-        if alien.turnStage == "shrinking":
-            alien.width = max(minimumWidth, alien.width - alien.turnSpeed)
-            if alien.width <= minimumWidth:
-                mirror()
-                alien.direction = alien.newDirection
-                alien.facing = "right" if alien.direction == 1 else "left"
-                alien.turnStage = "expanding"
-
-        elif alien.turnStage == "expanding":
-            alien.width = min(alien.normalWidth, alien.width + alien.turnSpeed)
-            if alien.width >= alien.normalWidth:
-                alien.turning = False
-                alien.turnStage = None
+        mirror()
+        alien.direction = newDirection
+        alien.newDirection = newDirection
+        alien.facing = "right" if newDirection == 1 else "left"
+        alien.turning = False
+        alien.turnStage = None
 
         alien.centerX = oldX
         alien.bottom = oldBottom
 
     alien.startTurn = startTurn
-    alien.updateTurnAnimation = updateTurnAnimation
     alien.updateWalkAnimation = updateWalkAnimation
 
     return alien
