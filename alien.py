@@ -9,7 +9,7 @@ def createAlien(x, y, scale=1):
     dark = rgb(7, 12, 23)
     blue = rgb(15, 27, 46)
     highlight = rgb(34, 51, 72)
-    bone = rgb(92, 112, 131) 
+    bone = rgb(92, 112, 131)
     teeth = rgb(188, 201, 207)
 
     alien = Group()
@@ -291,8 +291,7 @@ def createAlien(x, y, scale=1):
         points = []
         for px, py in shape.pointList:
             weight = 1 if isFoot else max(0, min(1, (py - hipY) / (65 * scale)))
-            points.append((px - bodyAnchor.centerX,
-                           py - bodyAnchor.centerY, weight))
+            points.append((px - bodyAnchor.centerX, py - bodyAnchor.centerY, weight))
         legPoses.append((shape, phaseOffset, points))
 
     rememberLegPart(farLeg, math.pi)
@@ -317,8 +316,7 @@ def createAlien(x, y, scale=1):
             step = math.sin(phase) * alien.strideLength if walking else 0
             lift = max(0, math.cos(phase)) * alien.stepHeight if walking else 0
             shape.pointList = [
-                [anchorX + facing * (px + step * weight),
-                 anchorY + py - lift * weight]
+                [anchorX + facing * (px + step * weight), anchorY + py - lift * weight]
                 for px, py, weight in originalPoints
             ]
 
@@ -346,9 +344,7 @@ def createAlien(x, y, scale=1):
         axis = alien.centerX
         for shape in alien.children:
             if isinstance(shape, Polygon):
-                shape.pointList = [
-                    [2 * axis - px, py] for px, py in shape.pointList
-                ]
+                shape.pointList = [[2 * axis - px, py] for px, py in shape.pointList]
             elif isinstance(shape, Line):
                 x1, x2 = shape.x1, shape.x2
                 shape.x1 = 2 * axis - x1
@@ -381,6 +377,10 @@ def createAlien(x, y, scale=1):
     alien.startTurn = startTurn
     alien.updateWalkAnimation = updateWalkAnimation
 
+    def get_bounds():
+        return (bodyAnchor.left, alien.top, bodyAnchor.right, alien.bottom)
+
+    alien.getBounds = get_bounds
     return alien
 
 

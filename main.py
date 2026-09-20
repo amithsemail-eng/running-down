@@ -26,19 +26,42 @@ healthBar = createHealthBar(player)
 platforms = createPlatforms()
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
 enemyPlatform = platforms[3]
-enemy = createAlien(
-    enemyPlatform.centerX,
-    enemyPlatform.top,
-    scale=0.55
-)
+enemy = createAlien(enemyPlatform.centerX, enemyPlatform.top, scale=0.55)
 enemy.speed = 3
+enemy.dy = 0
+enemy.jumpPower = -13
+enemy.onGround = False
+enemy.groundPlatform = None
 enemy.direction = 1
-enemy.leftLimit = enemyPlatform.left + enemy.normalWidth / 2
-enemy.rightLimit = enemyPlatform.right - enemy.normalWidth / 2
+enemy.bottom = enemyPlatform.top - 60
+
 chests = createChests()
 obstacles = createObstacles()
 axes = createAxes()
 bullets = []
+
+
+def applyEnemyGravity():
+    left, oldTop, right, oldBottom = enemy.getBounds()
+
+    enemy.dy += 0.6
+    movement = enemy.dy
+    landedPlatform = None
+    for platform in platforms:
+        if right <= platform.left or left >= platform.right:
+            continue
+        if enemy.dy >= 0 and oldBottom <= platform.top:
+            gap = platform.top - oldBottom
+            if gap <= movement:
+                movement = gap
+                landedPlatform = platform
+        elif enemy.dy < 0 and oldTop >= platform.bottom:
+            movement = max(movement, platform.bottom - oldTop)
+    enemy.centerY += movement
+    enemy.groundPlatform = landedPlatform
+    enemy.onGround = landedPlatform is not None
+    if enemy.onGround or movement != enemy.dy:
+        enemy.dy = 0
 
 
 def startBoostTimer():
@@ -125,7 +148,8 @@ def movePlayerX(amount):
 
 
 def updateEnemy():
-
+    applyEnemyGravity()
+    """
     if enemy.turning:
         return
 
@@ -139,6 +163,8 @@ def updateEnemy():
     elif enemy.direction == -1 and enemy.centerX <= enemy.leftLimit:
         enemy.centerX = enemy.leftLimit
         enemy.startTurn(1)
+    """
+
 
 def onKeyPress(key):
     if app.gameOver:
@@ -200,7 +226,7 @@ def onStep():
         player.dy = 0
         player.onGround = True
     elif movement != player.dy:
-        player.dy = 0  
+        player.dy = 0
     player.sword.update()
 
     if player.bottom >= app.height:
