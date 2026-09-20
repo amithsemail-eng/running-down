@@ -7,6 +7,7 @@ from platforms import createPlatforms
 from obstacles import createObstacles, createAxes
 from healthbar import createHealthBar
 from bullet import createBullet
+from alien import createAlien
 
 app.stepsPerSecond = 30
 app.width = 819
@@ -17,18 +18,50 @@ app.boostTimerLength = 10
 app.gameOver = False
 
 backgroundMusic = Sound("sounds/jumphigherrunfaster.ogg")
-backgroundMusic.play(loop=False)
+backgroundMusic.play(loop=True)
 jumpSound = Sound("sounds/jump.flac")
 
 player = createPlayer()
 healthBar = createHealthBar(player)
 platforms = createPlatforms()
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
+enemyPlatform = platforms[3]
+enemy = createAlien(enemyPlatform.centerX, enemyPlatform.top, scale=0.55)
+enemy.speed = 3
+enemy.dy = 0
+enemy.jumpPower = -13
+enemy.onGround = False
+enemy.groundPlatform = None
+enemy.direction = 1
+enemy.bottom = enemyPlatform.top - 60
 
 chests = createChests()
 obstacles = createObstacles()
 axes = createAxes()
 bullets = []
+
+
+def applyEnemyGravity():
+    left, oldTop, right, oldBottom = enemy.getBounds()
+
+    enemy.dy += 0.6
+    movement = enemy.dy
+    landedPlatform = None
+    for platform in platforms:
+        if right <= platform.left or left >= platform.right:
+            continue
+        if enemy.dy >= 0 and oldBottom <= platform.top:
+            gap = platform.top - oldBottom
+            if gap <= movement:
+                movement = gap
+                landedPlatform = platform
+        elif enemy.dy < 0 and oldTop >= platform.bottom:
+            movement = max(movement, platform.bottom - oldTop)
+    enemy.centerY += movement
+    enemy.groundPlatform = landedPlatform
+    enemy.onGround = landedPlatform is not None
+    if enemy.onGround or movement != enemy.dy:
+        enemy.dy = 0
 
 
 def startBoostTimer():
@@ -59,6 +92,7 @@ def resetPlayer():
     player.bottom = platforms[0].top
     player.dy = 0
     player.onGround = True
+    player.sword.reset()
     player.health = player.maxHealth
     player.damageCooldown = 0
     player.speed = player.normSpeed
@@ -81,8 +115,12 @@ def tryStand():
         return True
     left, top, right, bottom = player.getBounds()
     for platform in platforms:
-        if (right > platform.left and left < platform.right
-                and bottom > platform.top and top - 14 < platform.bottom):
+        if (
+            right > platform.left
+            and left < platform.right
+            and bottom > platform.top
+            and top - 14 < platform.bottom
+        ):
             return False
     player.stand()
     return True
@@ -99,12 +137,33 @@ def movePlayerX(amount):
         elif amount < 0 and left >= platform.right:
             amount = max(amount, platform.right - left)
     player.centerX += max(-left, min(amount, app.width - right))
+    player.sword.refresh()
     left, top, right, bottom = player.getBounds()
     player.onGround = any(
         abs(bottom - platform.top) < 0.001
-        and right > platform.left and left < platform.right
+        and right > platform.left
+        and left < platform.right
         for platform in platforms
     )
+
+
+def updateEnemy():
+    applyEnemyGravity()
+    """
+    if enemy.turning:
+        return
+
+    enemy.centerX += enemy.speed * enemy.direction
+    enemy.updateWalkAnimation(enemy.speed != 0)
+
+    if enemy.direction == 1 and enemy.centerX >= enemy.rightLimit:
+        enemy.centerX = enemy.rightLimit
+        enemy.startTurn(-1)
+
+    elif enemy.direction == -1 and enemy.centerX <= enemy.leftLimit:
+        enemy.centerX = enemy.leftLimit
+        enemy.startTurn(1)
+    """
 
 
 def onKeyPress(key):
@@ -124,6 +183,10 @@ def onKeyPress(key):
         player.onGround = False
     if "1" == key:
         bullets.append(createBullet(player))
+    if key == "up":
+        player.sword.toggle()
+    if key == "0":
+        player.sword.swing()
 
     if key == "down":
         if player.isCrouching:
@@ -144,7 +207,7 @@ def onStep():
     player.updateTurnAnimation()
     player.onGround = False
     left, oldTop, right, oldBottom = player.getBounds()
-    # Find the nearest platform crossed before applying gravity movement
+    # Find the nearest platform crossed before applying gravity movement.
     player.dy += 0.6
     movement = player.dy
     landedPlatform = None
@@ -164,11 +227,12 @@ def onStep():
         player.onGround = True
     elif movement != player.dy:
         player.dy = 0
+    player.sword.update()
 
     if player.bottom >= app.height:
         restart()
         return
-    # Allow the head above the viewport so the y=30 platform is reachable
+    # Allow the head above the viewport so the y=30 platform is reachable.
     for obstacle in obstacles:
         if player.hitsShape(obstacle):
             player.takeDamage(15, healthBar, restart)
@@ -180,7 +244,10 @@ def onStep():
             player.takeDamage(25, healthBar, restart)
             if app.gameOver:
                 return
+    if player.hitsShape(enemy):
+        player.takeDamage(5, healthBar, restart)
 
+    updateEnemy()
     for bullet in bullets:
         bullet.update()
         if bullet.isOffScreen(app.width):
@@ -198,5 +265,6 @@ def onStep():
         app.boostTimer -= 1
         if app.boostTimer == 0:
             player.speed = player.normSpeed
+
 
 cmu_graphics.run()
