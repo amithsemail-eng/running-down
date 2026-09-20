@@ -26,11 +26,15 @@ healthBar = createHealthBar(player)
 platforms = createPlatforms()
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
 enemyPlatform = platforms[3]
-enemy = createAlien(280, enemyPlatform.top, scale=0.55)
+enemy = createAlien(
+    enemyPlatform.centerX,
+    enemyPlatform.top,
+    scale=0.55
+)
 enemy.speed = 3
 enemy.direction = 1
-enemy.leftLimit = 200
-enemy.rightLimit = enemyPlatform.right
+enemy.leftLimit = enemyPlatform.left + enemy.normalWidth / 2
+enemy.rightLimit = enemyPlatform.right - enemy.normalWidth / 2
 chests = createChests()
 obstacles = createObstacles()
 axes = createAxes()
@@ -121,15 +125,20 @@ def movePlayerX(amount):
 
 
 def updateEnemy():
-    enemy.updateTurnAnimation()
+
     if enemy.turning:
         return
+
     enemy.centerX += enemy.speed * enemy.direction
     enemy.updateWalkAnimation(enemy.speed != 0)
+
     if enemy.direction == 1 and enemy.centerX >= enemy.rightLimit:
         enemy.centerX = enemy.rightLimit
         enemy.startTurn(-1)
 
+    elif enemy.direction == -1 and enemy.centerX <= enemy.leftLimit:
+        enemy.centerX = enemy.leftLimit
+        enemy.startTurn(1)
 
 def onKeyPress(key):
     if app.gameOver:
