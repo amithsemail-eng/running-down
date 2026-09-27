@@ -136,6 +136,15 @@ def movePlayerX(amount):
             amount = min(amount, platform.left - right)
         elif amount < 0 and left >= platform.right:
             amount = max(amount, platform.right - left)
+
+    enemyLocation = enemy.getBounds()
+    enemyLeft, enemyTop, enemyRight, enemyBottom = enemyLocation
+    if bottom > enemyTop and top < enemyBottom:
+        if amount > 0 and right <= enemyLeft:
+            amount = min(amount, enemyLeft - right)
+        elif amount < 0 and left >= enemyRight:
+            amount = max(amount, enemyRight - left)
+
     player.centerX += max(-left, min(amount, app.width - right))
     player.sword.refresh()
     left, top, right, bottom = player.getBounds()
@@ -147,23 +156,21 @@ def movePlayerX(amount):
     )
 
 
+def chasePlayer():
+    distance = enemy.centerX - player.centerX
+    if distance > 0:
+        direction = -1
+    else:
+        direction = 1
+    enemy.startTurn(direction)
+    movement = enemy.speed * direction
+    enemy.centerX += movement
+    enemy.updateWalkAnimation(enemy.onGround and movement)
+
+
 def updateEnemy():
     applyEnemyGravity()
-    """
-    if enemy.turning:
-        return
-
-    enemy.centerX += enemy.speed * enemy.direction
-    enemy.updateWalkAnimation(enemy.speed != 0)
-
-    if enemy.direction == 1 and enemy.centerX >= enemy.rightLimit:
-        enemy.centerX = enemy.rightLimit
-        enemy.startTurn(-1)
-
-    elif enemy.direction == -1 and enemy.centerX <= enemy.leftLimit:
-        enemy.centerX = enemy.leftLimit
-        enemy.startTurn(1)
-    """
+    chasePlayer()
 
 
 def onKeyPress(key):
