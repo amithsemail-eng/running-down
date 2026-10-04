@@ -13,7 +13,7 @@ def createPlatforms():
         Rect(560, 280, 170, 20, fill="orangeRed"),
         Rect(350, 195, 160, 20, fill="deepSkyBlue"),
         Rect(90, 110, 150, 20, fill="hotPink"),
-        Rect(380, 30, 140, 20, fill="saddleBrown"),
         Rect(0, 820, 819, 1, fill="black"),
+        Rect(380, 30, 140, 20, fill="saddleBrown"),
     ]
     return platforms

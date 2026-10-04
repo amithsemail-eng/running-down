@@ -25,7 +25,7 @@ player = createPlayer()
 healthBar = createHealthBar(player)
 platforms = createPlatforms()
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
-enemyPlatform = platforms[3]
+enemyPlatform = platforms[0]
 enemy = createAlien(enemyPlatform.centerX, enemyPlatform.top, scale=0.55)
 enemy.speed = 3
 enemy.dy = 0
@@ -156,16 +156,52 @@ def movePlayerX(amount):
     )
 
 
+def moveEnemyX(amount):
+    el, et, er, eb = enemy.getBounds()
+    blockingBoxes = []
+    for platform in platforms:
+        blockingBoxes.append(
+            (platform.left, platform.top, platform.right, platform.bottom)
+        )
+    blockingBoxes.append(player.getBounds())
+    for box in blockingBoxes:
+        boxLeft, boxTop, boxRight, boxBottom = box
+        if eb <= boxTop or et >= boxBottom:
+            continue
+        print("amount: ", amount)
+        if amount > 0 and er <= boxLeft:
+            amount = min(amount, boxLeft - er)
+        elif amount < 0:
+            amount = max(amount, boxRight - el)
+    enemy.centerX += amount
+    print("final movement: ", amount)
+    return amount
+
+
 def chasePlayer():
-    distance = enemy.centerX - player.centerX
+    el, et, er, eb = enemy.getBounds()
+    pl, pt, pr, pb = player.getBounds()
+    distance = (pl + pr) / 2 - (el + er) / 2
+    if abs(distance) <= 10:
+        enemy.updateWalkAnimation(False)
+        return
+
     if distance > 0:
-        direction = -1
-    else:
         direction = 1
+    else:
+        direction = -1
     enemy.startTurn(direction)
-    movement = enemy.speed * direction
-    enemy.centerX += movement
-    enemy.updateWalkAnimation(enemy.onGround and movement)
+    moved = moveEnemyX(enemy.speed * direction)
+    enemy.updateWalkAnimation(enemy.onGround and moved != 0)
+
+
+def tryEnemyJump():
+    if enemy.onGround == False:
+        return
+
+    enemyLocation = enemy.getBounds()
+    enemyLeft, enemyTop, enemyRight, enemyBottom = enemyLocation
+    platform = enemy.groundPlatform
 
 
 def updateEnemy():
