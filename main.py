@@ -204,6 +204,13 @@ def chasePlayer():
         tryEnemyJump(dy)
 
 
+def playerInReach():
+    el, et, er, eb = enemy.getBounds()
+    pl, pt, pr, pb = player.getBounds()
+    dx = (pl + pr) / 2 - (el + er) / 2
+    return abs(dx) < 50 and abs(pb - eb) < 50
+
+
 def tryEnemyJump(dy):
     if enemy.onGround == False:
         return
