@@ -184,9 +184,10 @@ def chasePlayer():
     dx = (pl + pr) / 2 - (el + er) / 2
     dy = pb - eb
     direction = 1 if dx > 0 else -1
-    if abs(dx) < 10:
+    if abs(dx) < 40:
         enemy.updateWalkAnimation(False)
         return
+    enemy.startTurn(direction)
     plat = enemy.groundPlatform
     step = enemy.speed * direction
     if plat is not None and dy < 10:
@@ -196,11 +197,7 @@ def chasePlayer():
             enemy.updateWalkAnimation(False)
             tryEnemyJump(dy)
             return
-    if distance > 0:
-        direction = 1
-    else:
-        direction = -1
-    enemy.startTurn(direction)
+
     moved = moveEnemyX(step)
     enemy.updateWalkAnimation(enemy.onGround and moved != 0)
     if moved == 0:
