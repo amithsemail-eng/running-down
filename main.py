@@ -25,7 +25,7 @@ player = createPlayer()
 healthBar = createHealthBar(player)
 platforms = createPlatforms()
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
-enemyPlatform = platforms[3]
+enemyPlatform = platforms[0]
 enemy = createAlien(enemyPlatform.centerX, enemyPlatform.top, scale=0.55)
 enemy.speed = 3
 enemy.dy = 0
@@ -136,6 +136,15 @@ def movePlayerX(amount):
             amount = min(amount, platform.left - right)
         elif amount < 0 and left >= platform.right:
             amount = max(amount, platform.right - left)
+
+    enemyLocation = enemy.getBounds()
+    enemyLeft, enemyTop, enemyRight, enemyBottom = enemyLocation
+    if bottom > enemyTop and top < enemyBottom:
+        if amount > 0 and right <= enemyLeft:
+            amount = min(amount, enemyLeft - right)
+        elif amount < 0 and left >= enemyRight:
+            amount = max(amount, enemyRight - left)
+
     player.centerX += max(-left, min(amount, app.width - right))
     player.sword.refresh()
     left, top, right, bottom = player.getBounds()
@@ -147,23 +156,66 @@ def movePlayerX(amount):
     )
 
 
-def updateEnemy():
-    applyEnemyGravity()
-    """
-    if enemy.turning:
+def moveEnemyX(amount):
+    el, et, er, eb = enemy.getBounds()
+    blockingBoxes = []
+    for platform in platforms:
+        blockingBoxes.append(
+            (platform.left, platform.top, platform.right, platform.bottom)
+        )
+    blockingBoxes.append(player.getBounds())
+    for box in blockingBoxes:
+        boxLeft, boxTop, boxRight, boxBottom = box
+        if eb <= boxTop or et >= boxBottom:
+            continue
+        print("amount: ", amount)
+        if amount > 0 and er <= boxLeft:
+            amount = min(amount, boxLeft - er)
+        elif amount < 0 and el >= boxRight:
+            amount = max(amount, boxRight - el)
+    enemy.centerX += amount
+    print("final movement: ", amount)
+    return amount
+
+
+def chasePlayer():
+    el, et, er, eb = enemy.getBounds()
+    pl, pt, pr, pb = player.getBounds()
+    dx = (pl + pr) / 2 - (el + er) / 2
+    dy = pb - eb
+    direction = 1 if dx > 0 else -1
+    if abs(dx) < 40:
+        enemy.updateWalkAnimation(False)
+        return
+    enemy.startTurn(direction)
+    plat = enemy.groundPlatform
+    step = enemy.speed * direction
+    if plat is not None and dy < 10:
+        atRightEdge = direction == 1 and er + step > plat.right
+        atLeftEdge = direction == -1 and el + step < plat.left
+        if atLeftEdge or atRightEdge:
+            enemy.updateWalkAnimation(False)
+            tryEnemyJump(dy)
+            return
+
+    moved = moveEnemyX(step)
+    enemy.updateWalkAnimation(enemy.onGround and moved != 0)
+    if moved == 0:
+        tryEnemyJump(dy)
+
+
+def tryEnemyJump(dy):
+    if enemy.onGround == False:
         return
 
-    enemy.centerX += enemy.speed * enemy.direction
-    enemy.updateWalkAnimation(enemy.speed != 0)
+    if dy < -20:
+        enemy.dy = enemy.jumpPower
+        enemy.onGround = False
 
-    if enemy.direction == 1 and enemy.centerX >= enemy.rightLimit:
-        enemy.centerX = enemy.rightLimit
-        enemy.startTurn(-1)
 
-    elif enemy.direction == -1 and enemy.centerX <= enemy.leftLimit:
-        enemy.centerX = enemy.leftLimit
-        enemy.startTurn(1)
-    """
+def updateEnemy():
+    applyEnemyGravity()
+    chasePlayer()
 
 
 def onKeyPress(key):
