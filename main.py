@@ -171,7 +171,7 @@ def moveEnemyX(amount):
         print("amount: ", amount)
         if amount > 0 and er <= boxLeft:
             amount = min(amount, boxLeft - er)
-        elif amount < 0:
+        elif amount < 0 and el >= boxRight:
             amount = max(amount, boxRight - el)
     enemy.centerX += amount
     print("final movement: ", amount)
@@ -181,27 +181,39 @@ def moveEnemyX(amount):
 def chasePlayer():
     el, et, er, eb = enemy.getBounds()
     pl, pt, pr, pb = player.getBounds()
-    distance = (pl + pr) / 2 - (el + er) / 2
-    if abs(distance) <= 10:
+    dx = (pl + pr) / 2 - (el + er) / 2
+    dy = pb - eb
+    direction = 1 if dx > 0 else -1
+    if abs(dx) < 10:
         enemy.updateWalkAnimation(False)
         return
-
+    plat = enemy.groundPlatform
+    step = enemy.speed * direction
+    if plat is not None and dy < 10:
+        atRightEdge = direction == 1 and er + step > plat.right
+        atLeftEdge = direction == -1 and el + step < plat.left
+        if atLeftEdge or atRightEdge:
+            enemy.updateWalkAnimation(False)
+            tryEnemyJump(dy)
+            return
     if distance > 0:
         direction = 1
     else:
         direction = -1
     enemy.startTurn(direction)
-    moved = moveEnemyX(enemy.speed * direction)
+    moved = moveEnemyX(step)
     enemy.updateWalkAnimation(enemy.onGround and moved != 0)
+    if moved == 0:
+        tryEnemyJump(dy)
 
 
-def tryEnemyJump():
+def tryEnemyJump(dy):
     if enemy.onGround == False:
         return
 
-    enemyLocation = enemy.getBounds()
-    enemyLeft, enemyTop, enemyRight, enemyBottom = enemyLocation
-    platform = enemy.groundPlatform
+    if dy < -20:
+        enemy.dy = enemy.jumpPower
+        enemy.onGround = False
 
 
 def updateEnemy():
