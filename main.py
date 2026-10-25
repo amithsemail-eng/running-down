@@ -34,7 +34,9 @@ enemy.onGround = False
 enemy.groundPlatform = None
 enemy.direction = 1
 enemy.bottom = enemyPlatform.top - 60
-
+enemy.attackTimer = 0
+enemy.attackCooldown = 0
+slash = Arc(0, 0, 80, 80, 30, 120, fill="white", opacity=0, visible=False)
 chests = createChests()
 obstacles = createObstacles()
 axes = createAxes()
@@ -168,13 +170,13 @@ def moveEnemyX(amount):
         boxLeft, boxTop, boxRight, boxBottom = box
         if eb <= boxTop or et >= boxBottom:
             continue
-        print("amount: ", amount)
+
         if amount > 0 and er <= boxLeft:
             amount = min(amount, boxLeft - er)
         elif amount < 0 and el >= boxRight:
             amount = max(amount, boxRight - el)
     enemy.centerX += amount
-    print("final movement: ", amount)
+
     return amount
 
 
@@ -222,7 +224,11 @@ def tryEnemyJump(dy):
 
 def updateEnemy():
     applyEnemyGravity()
-    chasePlayer()
+    updateEnemyAttack()
+    if enemy.attackTimer == 0:
+        chasePlayer()
+    else:
+        enemy.updateWalkAnimation(False)
 
 
 def onKeyPress(key):
@@ -252,6 +258,37 @@ def onKeyPress(key):
             tryStand()
         else:
             player.crouch()
+
+
+def updateEnemyAttack():
+    if enemy.attackCooldown > 0:
+        enemy.attackCooldown -= 1
+        if enemy.attackTimer == 0:
+            if enemy.attackCooldown == 0 and enemy.onGround and playerInReach():
+                enemy.attackTimer = 24
+            else:
+                slash.visible = False
+                return
+    enemy.attackTimer -= 1
+    # Put the slash in front of the alien
+    el, et, er, eb = enemy.getBounds()
+    if enemy.facing == "right":
+        slash.centerX, slash.startAngle = er, 30
+    else:
+        slash.centerX, slash.startAngle = el, 210
+        slash.centerY = (et + eb) / 2
+        slash.visible = True
+        slash.toFront()
+    if enemy.attackTimer > 8:  # windup
+        slash.opacity = 20
+    elif enemy.attackTimer > 3:  # strike
+        slash.opacity = 90
+    if player.hitsShape(slash):
+        player.takeDamage(20, healthBar, restart)
+    else:  # recovery
+        slash.visible = False
+    if enemy.attackTimer == 0:
+        enemy.attackCooldown = 45
 
 
 def onStep():
