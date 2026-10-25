@@ -36,7 +36,8 @@ enemy.direction = 1
 enemy.bottom = enemyPlatform.top - 60
 enemy.attackTimer = 0
 enemy.attackCooldown = 0
-slash = Arc(0, 0, 80, 80, 30, 120, fill="red", opacity=0, visible=False)
+slashSize = 2 * enemy.armReach
+slash = Arc(0, 0, slashSize, slashSize, 35, 125, fill="white", opacity=0, visible=False)
 chests = createChests()
 obstacles = createObstacles()
 axes = createAxes()
@@ -110,6 +111,9 @@ def resetPlayer():
     deathScreen.visible = deathMessage.visible = False
     winScreen.visible = winMessage.visible = False
     app.gameOver = False
+    enemy.attackTimer = 0
+    slash.visible = False
+    enemy.setArmAngle(0)
 
 
 def tryStand():
@@ -263,31 +267,46 @@ def onKeyPress(key):
 def updateEnemyAttack():
     if enemy.attackCooldown > 0:
         enemy.attackCooldown -= 1
+
+    # Start a new attack?
     if enemy.attackTimer == 0:
         if enemy.attackCooldown == 0 and enemy.onGround and playerInReach():
+            # Turn to face the player first, in case they're behind us
+            el, et, er, eb = enemy.getBounds()
+            pl, pt, pr, pb = player.getBounds()
+            enemy.startTurn(1 if pl + pr > el + er else -1)
             enemy.attackTimer = 24
         else:
             slash.visible = False
             return
+
     enemy.attackTimer -= 1
-    # Put the slash in front of the alien
-    el, et, er, eb = enemy.getBounds()
+    timer = enemy.attackTimer
+
+    # The swoosh is centered on the shoulder, so it traces the claws' path
+    slash.centerX, slash.centerY = enemy.getShoulder()
     if enemy.facing == "right":
-        slash.centerX, slash.startAngle = er, 30
+        slash.startAngle = 35
     else:
-        slash.centerX, slash.startAngle = el, 210
-    slash.centerY = (et + eb) / 2
-    slash.visible = True
+        slash.startAngle = 200
     slash.toFront()
-    if enemy.attackTimer > 8:  # windup
-        slash.opacity = 20
-    elif enemy.attackTimer > 3:  # strike
-        slash.opacity = 90
-        if player.hitsShape(slash):
-            player.takeDamage(15, healthBar, restart)
-    else:  # recovery
+
+    if timer > 8:  # windup: raise the arm back over the head
+        progress = min(1, (23 - timer) / 10)
+        enemy.setArmAngle(-115 * progress)
         slash.visible = False
-    if enemy.attackTimer == 0:
+    elif timer > 3:  # strike: slash down and forward
+        progress = (8 - timer) / 4
+        enemy.setArmAngle(-115 + 125 * progress)
+        slash.visible = True
+        slash.opacity = 40
+        if player.hitsShape(slash):
+            player.takeDamage(20, healthBar, restart)
+    else:  # recovery: settle back to resting
+        enemy.setArmAngle(10 * timer / 3)
+        slash.visible = False
+
+    if timer == 0:
         enemy.attackCooldown = 45
 
 
@@ -340,8 +359,6 @@ def onStep():
             player.takeDamage(25, healthBar, restart)
             if app.gameOver:
                 return
-    if player.hitsShape(enemy):
-        player.takeDamage(5, healthBar, restart)
 
     updateEnemy()
     for bullet in bullets:
