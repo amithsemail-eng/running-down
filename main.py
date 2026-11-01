@@ -25,7 +25,7 @@ player = createPlayer()
 healthBar = createHealthBar(player)
 platforms = createPlatforms()
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
-enemyPlatform = platforms[0]
+enemyPlatform = platforms[6]
 enemy = createAlien(enemyPlatform.centerX, enemyPlatform.top, scale=0.55)
 enemy.speed = 3
 enemy.dy = 0
@@ -36,12 +36,26 @@ enemy.direction = 1
 enemy.bottom = enemyPlatform.top - 60
 enemy.attackTimer = 0
 enemy.attackCooldown = 0
+enemy.maxHealth = 9876
+enemy.health = enemy.maxHealth
+enemy.isAlive = True
 slashSize = 2 * enemy.armReach
 slash = Arc(0, 0, slashSize, slashSize, 35, 125, fill="white", opacity=0, visible=False)
 chests = createChests()
 obstacles = createObstacles()
 axes = createAxes()
 bullets = []
+
+
+def enemyTakeDamage(amount):
+    if not enemy.isAlive:
+        return
+    enemy.health -= amount
+    if enemy.health <= 0:
+        enemy.health = 0
+        enemy.isAlive = False
+        enemy.visible = False
+        slash.visible = False
 
 
 def applyEnemyGravity():
@@ -227,6 +241,8 @@ def tryEnemyJump(dy):
 
 
 def updateEnemy():
+    if not enemy.isAlive:
+        return
     applyEnemyGravity()
     updateEnemyAttack()
     if enemy.attackTimer == 0:
@@ -363,7 +379,11 @@ def onStep():
     updateEnemy()
     for bullet in bullets:
         bullet.update()
-        if bullet.isOffScreen(app.width):
+        if enemy.isAlive and bullet.shape.hitsShape(enemy):
+            enemyTakeDamage(40)
+            bullet.shape.visible = False
+            bullets.remove(bullet)
+        elif bullet.isOffScreen(app.width):
             bullet.shape.visible = False
             bullets.remove(bullet)
     for chest in chests:
