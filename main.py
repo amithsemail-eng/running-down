@@ -17,9 +17,9 @@ app.boostTimerLength = 10
 # left top width height
 app.gameOver = False
 
-backgroundMusic = Sound("sounds/jumphigherrunfaster.ogg")
+backgroundMusic = Sound("sounds/main-theme.mp3")
 backgroundMusic.play(loop=True)
-jumpSound = Sound("sounds/jump.flac")
+# jumpSound = Sound("sounds/jump.flac")
 
 player = createPlayer()
 healthBar = createHealthBar(player)
@@ -247,7 +247,7 @@ def onKeyPress(key):
         movePlayerX(player.speed)
 
     if "space" == key and player.onGround and tryStand():
-        jumpSound.play()
+        # jumpSound.play()
         player.dy = player.jumpPower
         player.onGround = False
     if "1" == key:
