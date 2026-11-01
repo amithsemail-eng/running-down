@@ -301,7 +301,7 @@ def updateEnemyAttack():
         slash.visible = True
         slash.opacity = 40
         if player.hitsShape(slash):
-            player.takeDamage(20, healthBar, restart)
+            player.takeDamage(10, healthBar, restart)
     else:  # recovery: settle back to resting
         enemy.setArmAngle(10 * timer / 3)
         slash.visible = False
