@@ -20,7 +20,7 @@ app.gameOver = False
 backgroundMusic = Sound("sounds/main-theme.mp3")
 backgroundMusic.play(loop=True)
 # jumpSound = Sound("sounds/jump.flac")
-
+swordSound = Sound("sounds/swordsound.mp3")
 player = createPlayer()
 healthBar = createHealthBar(player)
 platforms = createPlatforms()
@@ -36,12 +36,19 @@ enemy.direction = 1
 enemy.bottom = enemyPlatform.top - 60
 enemy.attackTimer = 0
 enemy.attackCooldown = 0
-enemy.maxHealth = 7000
+enemy.maxHealth = 5000
 enemy.health = enemy.maxHealth
 enemy.isAlive = True
 slashSize = 2 * enemy.armReach
 slash = Arc(0, 0, slashSize, slashSize, 35, 125, fill="white", opacity=0, visible=False)
 chests = createChests()
+resetButton = Group(
+    Rect(
+        app.width // 2 - 80, app.height // 2 + 60, 160, 50, fill="white", border="black"
+    ),
+    Label("Reset", app.width // 2, app.height // 2 + 85, size=28),
+)
+resetButton.visible = False
 obstacles = createObstacles()
 axes = createAxes()
 bullets = []
@@ -90,12 +97,19 @@ def winner():
     winScreen.visible = True
 
 
+def onMousePress(x, y):
+    if resetButton.visible and resetButton.contains(x, y):
+        resetPlayer()
+
+
 def restart():
     if app.gameOver:
         return
+    resetButton.visible = True
     deathScreen.visible = True
     deathMessage.visible = True
     deathScreen.toFront()
+    resetButton.toFront()
     deathMessage.toFront()
     app.deathTimer = 300
     app.gameOver = True
@@ -123,6 +137,7 @@ def resetPlayer():
         chest.opened = False
         chest.shape.visible = True
     deathScreen.visible = deathMessage.visible = False
+    resetButton.visible = False
     winScreen.visible = winMessage.visible = False
     app.gameOver = False
     enemy.attackTimer = 0
@@ -281,6 +296,8 @@ def onKeyPress(key):
     if key == "up":
         player.sword.toggle()
     if key == "0":
+        if player.sword.swingFrame is None and not player.sword.isSheathed:
+            swordSound.play()
         player.sword.swing()
 
     if key == "down":
