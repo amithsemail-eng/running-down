@@ -35,6 +35,7 @@ class Sword:
     def swing(self):
         if not self.isSheathed and self.swingFrame is None:
             self.swingFrame = 0
+            self.hasHit = False
             self.refresh()
 
     def reset(self):
