@@ -9,6 +9,7 @@ class Sword:
         self.arm = arm
         self.isSheathed = False
         self.swingFrame = None
+        self.hasHit = False
         self.shape = Group(
             Polygon(
                 -3, -8, -3, -35, 0, -43, 3, -35, 3, -8, fill="silver", border="dimGray"
@@ -34,6 +35,7 @@ class Sword:
     def swing(self):
         if not self.isSheathed and self.swingFrame is None:
             self.swingFrame = 0
+            self.hasHit = False
             self.refresh()
 
     def reset(self):

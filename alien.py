@@ -206,23 +206,26 @@ def createAlien(x, y, scale=1):
         Oval(234, 220, 22, 16, fill=blue, rotateAngle=30),
     )
 
+    shoulder, nearArm, hand = list(alien.children)[-3:]
+
     # Three hooked fingers.
+    fingers = []
     for offset in (0, 7, 14):
-        alien.add(
-            Polygon(
-                233 + offset,
-                217,
-                242 + offset,
-                226,
-                239 + offset,
-                238,
-                236 + offset,
-                228,
-                229 + offset,
-                222,
-                fill=bone,
-            )
+        finger = Polygon(
+            233 + offset,
+            217,
+            242 + offset,
+            226,
+            239 + offset,
+            238,
+            236 + offset,
+            228,
+            229 + offset,
+            222,
+            fill=bone,
         )
+        alien.add(finger)
+        fingers.append(finger)
 
     # Long skull extending far behind the face.
     alien.add(
@@ -375,6 +378,53 @@ def createAlien(x, y, scale=1):
         alien.bottom = oldBottom
 
     alien.startTurn = startTurn
+
+    # Remember the near arm's resting pose, measured from the body,
+    # so it can swing around the shoulder.
+    shoulderX = shoulder.centerX - bodyAnchor.centerX
+    shoulderY = shoulder.centerY - bodyAnchor.centerY
+    armPoses = []
+    for part in [nearArm] + fingers:
+        points = []
+        for px, py in part.pointList:
+            points.append((px - bodyAnchor.centerX, py - bodyAnchor.centerY))
+        armPoses.append((part, points))
+    handX = hand.centerX - bodyAnchor.centerX
+    handY = hand.centerY - bodyAnchor.centerY
+    handAngle = hand.rotateAngle
+
+    def setArmAngle(angle):
+        # angle 0 = resting pose; negative = raised back, positive = swung down/forward
+        facing = 1 if alien.facing == "right" else -1
+        anchorX, anchorY = bodyAnchor.centerX, bodyAnchor.centerY
+        radians = math.radians(angle)
+        cos, sin = math.cos(radians), math.sin(radians)
+
+        def swing(x, y):
+            # Rotate (x, y) around the shoulder, then flip if facing left.
+            dx, dy = x - shoulderX, y - shoulderY
+            newX = shoulderX + dx * cos - dy * sin
+            newY = shoulderY + dx * sin + dy * cos
+            return [anchorX + facing * newX, anchorY + newY]
+
+        for part, points in armPoses:
+            part.pointList = [swing(x, y) for x, y in points]
+        hand.centerX, hand.centerY = swing(handX, handY)
+        hand.rotateAngle = facing * (handAngle + angle)
+
+    alien.setArmAngle = setArmAngle
+
+    # How far the claws reach from the shoulder (used for the swipe's hit area).
+    alien.armReach = max(
+        math.dist((x, y), (shoulderX, shoulderY))
+        for part, points in armPoses
+        for x, y in points
+    )
+
+    def getShoulder():
+        return shoulder.centerX, shoulder.centerY
+
+    alien.getShoulder = getShoulder
     alien.updateWalkAnimation = updateWalkAnimation
 
     def get_bounds():

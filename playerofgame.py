@@ -243,7 +243,7 @@ def createPlayer():
     player.boostSpeed = 50
     player.normSpeed = player.speed
     player.dy = 0
-    player.jumpPower = -13
+    player.jumpPower = -14.5
     player.normJumpPower = player.jumpPower
     player.onGround = False
     player.jumpBoostPower = -65

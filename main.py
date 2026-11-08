@@ -17,28 +17,52 @@ app.boostTimerLength = 10
 # left top width height
 app.gameOver = False
 
-backgroundMusic = Sound("sounds/jumphigherrunfaster.ogg")
+backgroundMusic = Sound("sounds/main-theme.mp3")
 backgroundMusic.play(loop=True)
-jumpSound = Sound("sounds/jump.flac")
-
+# jumpSound = Sound("sounds/jump.flac")
+swordSound = Sound("sounds/swordsound.mp3")
 player = createPlayer()
 healthBar = createHealthBar(player)
 platforms = createPlatforms()
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
-enemyPlatform = platforms[0]
+enemyPlatform = platforms[6]
 enemy = createAlien(enemyPlatform.centerX, enemyPlatform.top, scale=0.55)
-enemy.speed = 3
+enemy.speed = 2.3
 enemy.dy = 0
 enemy.jumpPower = -13
 enemy.onGround = False
 enemy.groundPlatform = None
 enemy.direction = 1
 enemy.bottom = enemyPlatform.top - 60
-
+enemy.attackTimer = 0
+enemy.attackCooldown = 0
+enemy.maxHealth = 5000
+enemy.health = enemy.maxHealth
+enemy.isAlive = True
+slashSize = 2 * enemy.armReach
+slash = Arc(0, 0, slashSize, slashSize, 35, 125, fill="white", opacity=0, visible=False)
 chests = createChests()
+resetButton = Group(
+    Rect(
+        app.width // 2 - 80, app.height // 2 + 60, 160, 50, fill="white", border="black"
+    ),
+    Label("Reset", app.width // 2, app.height // 2 + 85, size=28),
+)
+resetButton.visible = False
 obstacles = createObstacles()
 axes = createAxes()
 bullets = []
+
+
+def enemyTakeDamage(amount):
+    if not enemy.isAlive:
+        return
+    enemy.health -= amount
+    if enemy.health <= 0:
+        enemy.health = 0
+        enemy.isAlive = False
+        enemy.visible = False
+        slash.visible = False
 
 
 def applyEnemyGravity():
@@ -73,12 +97,19 @@ def winner():
     winScreen.visible = True
 
 
+def onMousePress(x, y):
+    if resetButton.visible and resetButton.contains(x, y):
+        resetPlayer()
+
+
 def restart():
     if app.gameOver:
         return
+    resetButton.visible = True
     deathScreen.visible = True
     deathMessage.visible = True
     deathScreen.toFront()
+    resetButton.toFront()
     deathMessage.toFront()
     app.deathTimer = 300
     app.gameOver = True
@@ -106,8 +137,12 @@ def resetPlayer():
         chest.opened = False
         chest.shape.visible = True
     deathScreen.visible = deathMessage.visible = False
+    resetButton.visible = False
     winScreen.visible = winMessage.visible = False
     app.gameOver = False
+    enemy.attackTimer = 0
+    slash.visible = False
+    enemy.setArmAngle(0)
 
 
 def tryStand():
@@ -139,7 +174,7 @@ def movePlayerX(amount):
 
     enemyLocation = enemy.getBounds()
     enemyLeft, enemyTop, enemyRight, enemyBottom = enemyLocation
-    if bottom > enemyTop and top < enemyBottom:
+    if enemy.isAlive and bottom > enemyTop and top < enemyBottom:
         if amount > 0 and right <= enemyLeft:
             amount = min(amount, enemyLeft - right)
         elif amount < 0 and left >= enemyRight:
@@ -168,13 +203,13 @@ def moveEnemyX(amount):
         boxLeft, boxTop, boxRight, boxBottom = box
         if eb <= boxTop or et >= boxBottom:
             continue
-        print("amount: ", amount)
+
         if amount > 0 and er <= boxLeft:
             amount = min(amount, boxLeft - er)
         elif amount < 0 and el >= boxRight:
             amount = max(amount, boxRight - el)
     enemy.centerX += amount
-    print("final movement: ", amount)
+
     return amount
 
 
@@ -204,6 +239,13 @@ def chasePlayer():
         tryEnemyJump(dy)
 
 
+def playerInReach():
+    el, et, er, eb = enemy.getBounds()
+    pl, pt, pr, pb = player.getBounds()
+    dx = (pl + pr) / 2 - (el + er) / 2
+    return abs(dx) < 50 and abs(pb - eb) < 50
+
+
 def tryEnemyJump(dy):
     if enemy.onGround == False:
         return
@@ -213,9 +255,25 @@ def tryEnemyJump(dy):
         enemy.onGround = False
 
 
+def checkSwordHit():
+    sword = player.sword
+    if not enemy.isAlive or sword.swingFrame is None or sword.hasHit:
+        return
+    blade = sword.shape.children[0]
+    if blade.hitsShape(enemy):
+        enemyTakeDamage(50)
+        sword.hasHit = True
+
+
 def updateEnemy():
+    if not enemy.isAlive:
+        return
     applyEnemyGravity()
-    chasePlayer()
+    updateEnemyAttack()
+    if enemy.attackTimer == 0:
+        chasePlayer()
+    else:
+        enemy.updateWalkAnimation(False)
 
 
 def onKeyPress(key):
@@ -230,7 +288,7 @@ def onKeyPress(key):
         movePlayerX(player.speed)
 
     if "space" == key and player.onGround and tryStand():
-        jumpSound.play()
+        # jumpSound.play()
         player.dy = player.jumpPower
         player.onGround = False
     if "1" == key:
@@ -238,6 +296,8 @@ def onKeyPress(key):
     if key == "up":
         player.sword.toggle()
     if key == "0":
+        if player.sword.swingFrame is None and not player.sword.isSheathed:
+            swordSound.play()
         player.sword.swing()
 
     if key == "down":
@@ -245,6 +305,52 @@ def onKeyPress(key):
             tryStand()
         else:
             player.crouch()
+
+
+def updateEnemyAttack():
+    if enemy.attackCooldown > 0:
+        enemy.attackCooldown -= 1
+
+    # Start a new attack?
+    if enemy.attackTimer == 0:
+        if enemy.attackCooldown == 0 and enemy.onGround and playerInReach():
+            # Turn to face the player first, in case they're behind us
+            el, et, er, eb = enemy.getBounds()
+            pl, pt, pr, pb = player.getBounds()
+            enemy.startTurn(1 if pl + pr > el + er else -1)
+            enemy.attackTimer = 24
+        else:
+            slash.visible = False
+            return
+
+    enemy.attackTimer -= 1
+    timer = enemy.attackTimer
+
+    # The swoosh is centered on the shoulder, so it traces the claws' path
+    slash.centerX, slash.centerY = enemy.getShoulder()
+    if enemy.facing == "right":
+        slash.startAngle = 35
+    else:
+        slash.startAngle = 200
+    slash.toFront()
+
+    if timer > 8:  # windup: raise the arm back over the head
+        progress = min(1, (23 - timer) / 10)
+        enemy.setArmAngle(-115 * progress)
+        slash.visible = False
+    elif timer > 3:  # strike: slash down and forward
+        progress = (8 - timer) / 4
+        enemy.setArmAngle(-115 + 125 * progress)
+        slash.visible = True
+        slash.opacity = 40
+        if player.hitsShape(slash):
+            player.takeDamage(10, healthBar, restart)
+    else:  # recovery: settle back to resting
+        enemy.setArmAngle(10 * timer / 3)
+        slash.visible = False
+
+    if timer == 0:
+        enemy.attackCooldown = 45
 
 
 def onStep():
@@ -280,7 +386,7 @@ def onStep():
     elif movement != player.dy:
         player.dy = 0
     player.sword.update()
-
+    checkSwordHit()
     if player.bottom >= app.height:
         restart()
         return
@@ -296,13 +402,15 @@ def onStep():
             player.takeDamage(25, healthBar, restart)
             if app.gameOver:
                 return
-    if player.hitsShape(enemy):
-        player.takeDamage(5, healthBar, restart)
 
     updateEnemy()
     for bullet in bullets:
         bullet.update()
-        if bullet.isOffScreen(app.width):
+        if enemy.isAlive and bullet.shape.hitsShape(enemy):
+            enemyTakeDamage(40)
+            bullet.shape.visible = False
+            bullets.remove(bullet)
+        elif bullet.isOffScreen(app.width):
             bullet.shape.visible = False
             bullets.remove(bullet)
     for chest in chests:
