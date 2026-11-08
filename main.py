@@ -27,7 +27,7 @@ platforms = createPlatforms()
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
 enemyPlatform = platforms[6]
 enemy = createAlien(enemyPlatform.centerX, enemyPlatform.top, scale=0.55)
-enemy.speed = 3
+enemy.speed = 2.3
 enemy.dy = 0
 enemy.jumpPower = -13
 enemy.onGround = False
@@ -36,7 +36,7 @@ enemy.direction = 1
 enemy.bottom = enemyPlatform.top - 60
 enemy.attackTimer = 0
 enemy.attackCooldown = 0
-enemy.maxHealth = 9876
+enemy.maxHealth = 100
 enemy.health = enemy.maxHealth
 enemy.isAlive = True
 slashSize = 2 * enemy.armReach
@@ -159,7 +159,7 @@ def movePlayerX(amount):
 
     enemyLocation = enemy.getBounds()
     enemyLeft, enemyTop, enemyRight, enemyBottom = enemyLocation
-    if bottom > enemyTop and top < enemyBottom:
+    if enemy.isAlive and bottom > enemyTop and top < enemyBottom:
         if amount > 0 and right <= enemyLeft:
             amount = min(amount, enemyLeft - right)
         elif amount < 0 and left >= enemyRight:
@@ -238,6 +238,16 @@ def tryEnemyJump(dy):
     if dy < -20:
         enemy.dy = enemy.jumpPower
         enemy.onGround = False
+
+
+def checkSwordHit():
+    sword = player.sword
+    if not enemy.isAlive or sword.swingFrame is None or sword.hasHit:
+        return
+    blade = sword.shape.children[0]
+    if blade.hitsShape(enemy):
+        enemyTakeDamage(50)
+        sword.hasHit = True
 
 
 def updateEnemy():
@@ -359,7 +369,7 @@ def onStep():
     elif movement != player.dy:
         player.dy = 0
     player.sword.update()
-
+    checkSwordHit()
     if player.bottom >= app.height:
         restart()
         return
