@@ -29,7 +29,7 @@ enemyPlatform = platforms[6]
 enemy = createAlien(enemyPlatform.centerX, enemyPlatform.top, scale=0.55)
 enemy.speed = 2.3
 enemy.dy = 0
-enemy.jumpPower = -13
+enemy.jumpPower = -20
 enemy.onGround = False
 enemy.groundPlatform = None
 enemy.direction = 1

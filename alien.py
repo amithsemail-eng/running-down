@@ -344,7 +344,7 @@ def createAlien(x, y, scale=1):
         drawLegs(isWalking)
 
     def mirror():
-        axis = alien.centerX
+        axis = bodyAnchor.centerX
         for shape in alien.children:
             if isinstance(shape, Polygon):
                 shape.pointList = [[2 * axis - px, py] for px, py in shape.pointList]
@@ -374,7 +374,6 @@ def createAlien(x, y, scale=1):
         alien.turning = False
         alien.turnStage = None
 
-        alien.centerX = oldX
         alien.bottom = oldBottom
 
     alien.startTurn = startTurn

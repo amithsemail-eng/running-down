@@ -29,7 +29,7 @@ def drawSpikes(x, y, width=100, height=20):
 
 def createObstacles():
     obstacles = [
-        drawSpikes(270, 670, 100),
+        drawSpikes(270, 630, 100),
         drawSpikes(310, 465.50, 80),
     ]
 
