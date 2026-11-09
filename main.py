@@ -8,7 +8,9 @@ from obstacles import createObstacles, createAxes
 from healthbar import createHealthBar
 from bullet import createBullet
 from alien import createAlien
+from bossbackground import createBossBackground
 
+app.level = 1
 app.stepsPerSecond = 30
 app.width = 819
 app.height = 820
@@ -211,6 +213,48 @@ def moveEnemyX(amount):
     enemy.centerX += amount
 
     return amount
+
+
+def loadLevel(level):
+    app.level = level
+
+    # Hide the old level
+    for platform in platforms:
+        platform.visible = False
+    for obstacle in obstacles:
+        obstacle.visible = False
+    for ax in axes:
+        ax.shape.visible = False
+    for chest in chests:
+        chest.shape.visible = False
+
+    # Build the new level, replacing what's inside the lists
+    platforms[:] = createPlatforms(level)
+    obstacles[:] = createObstacles(level)
+    axes[:] = createAxes(level)
+    chests.clear()
+
+    # Boss stage scenery, sent to the back so it's behind everything
+    if level == 2:
+        background = createBossBackground()
+        background.toBack()
+
+    # Player starts on the left, the alien boss on the right
+    player.centerX = app.width // 2
+    player.bottom = platforms[0].top
+    player.dy = 0
+    enemy.centerX = app.width // 2
+    enemy.bottom = platforms[0].top
+    enemy.dy = 0
+    enemy.health = (
+        enemy.maxHealth
+    )  # the boss starts fresh, even if you beat it on level 1
+    enemy.isAlive = True
+    enemy.visible = True
+
+    # New shapes are drawn on top, so bring the characters back to the front
+    enemy.toFront()
+    player.toFront()
 
 
 def platformUnder(left, right, bottom):
@@ -461,7 +505,10 @@ def onStep():
 
     winning_platform = platforms[-1]
     if landedPlatform is winning_platform:
-        winner()
+        if app.level == 1:
+            loadLevel(2)
+        if app.level == 2 and not enemy.isAlive:
+            winner()
     if app.boostTimer > 0:
         app.boostTimer -= 1
         if app.boostTimer == 0:

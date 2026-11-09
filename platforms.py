@@ -2,7 +2,17 @@ import cmu_graphics
 from cmu_graphics import *
 
 
-def createPlatforms():
+def createPlatforms(level=1):
+    if level == 2:
+        return [
+            Rect(
+                0,
+                700,
+                819,
+                120,
+                fill=gradient("forestGreen", "darkOliveGreen", start="top"),
+            )
+        ]
     platforms = [
         Rect(0, 780, 260, 20, fill="crimson"),
         Rect(220, 700, 240, 20, fill="gold"),

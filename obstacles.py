@@ -27,7 +27,9 @@ def drawSpikes(x, y, width=100, height=20):
     return spikes
 
 
-def createObstacles():
+def createObstacles(level=1):
+    if level == 2:
+        return []
     obstacles = [
         drawSpikes(270, 630, 100),
         drawSpikes(310, 465.50, 80),
@@ -90,7 +92,9 @@ class SwingingAxe:
         self.blade.centerY = axeY
 
 
-def createAxes():
+def createAxes(level=1):
+    if level == 2:
+        return []
     axes = [SwingingAxe(400, 100)]
 
     return axes
