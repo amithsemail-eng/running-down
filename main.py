@@ -213,21 +213,62 @@ def moveEnemyX(amount):
     return amount
 
 
+def platformUnder(left, right, bottom):
+    for platform in platforms:
+        if (
+            abs(bottom - platform.top) < 1
+            and right > platform.left
+            and left < platform.right
+        ):
+            return platform
+
+
 def chasePlayer():
     el, et, er, eb = enemy.getBounds()
     pl, pt, pr, pb = player.getBounds()
-    dx = (pl + pr) / 2 - (el + er) / 2
+    enemyX = (el + er) / 2
+    halfWidth = (er - el) / 2
     dy = pb - eb
+    goalX = (pl + pr) / 2  # normally, walk toward the player
+    stopDistance = 40
+    playerPlatform = platformUnder(pl, pr, pb)
+    myPlatform = enemy.groundPlatform
+
+    if enemy.onGround and playerPlatform is not None:
+        if dy < -20:
+            # Player is above: go just past the nearer edge of their platform
+            if enemyX < playerPlatform.centerX:
+                goalX = playerPlatform.left - halfWidth - 5
+            else:
+                goalX = playerPlatform.right + halfWidth + 5
+            stopDistance = 0
+            if abs(enemyX - goalX) <= enemy.speed:
+                tryEnemyJump(dy)  # made it to the edge: jump up
+        elif dy > 10 and myPlatform is not None:
+            # Player is below: walk off whichever edge leads toward their platform
+            if playerPlatform.left < myPlatform.left:
+                goalX = myPlatform.left - halfWidth - 5
+            elif playerPlatform.right > myPlatform.right:
+                goalX = myPlatform.right + halfWidth + 5
+            elif enemyX < myPlatform.centerX:
+                goalX = myPlatform.left - halfWidth - 5
+            else:
+                goalX = myPlatform.right + halfWidth + 5
+            stopDistance = 0
+
+    if not enemy.onGround:
+        stopDistance = 0  # mid-jump: keep moving so we land on the platform
+
+    dx = goalX - enemyX
     direction = 1 if dx > 0 else -1
-    if abs(dx) < 40:
+    if abs(dx) <= max(stopDistance, enemy.speed):
         enemy.updateWalkAnimation(False)
         return
     enemy.startTurn(direction)
-    plat = enemy.groundPlatform
     step = enemy.speed * direction
-    if plat is not None and dy < 10:
-        atRightEdge = direction == 1 and er + step > plat.right
-        atLeftEdge = direction == -1 and el + step < plat.left
+    if myPlatform is not None and dy < 10:
+        atRightEdge = direction == 1 and er + step > myPlatform.right
+        atLeftEdge = direction == -1 and el + step < myPlatform.left
         if atLeftEdge or atRightEdge:
             enemy.updateWalkAnimation(False)
             tryEnemyJump(dy)
