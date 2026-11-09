@@ -18,7 +18,7 @@ app.boostTimer = 0
 app.boostTimerLength = 10
 # left top width height
 app.gameOver = False
-
+bossBattleMusic = Sound("sounds/boss-music.mp3")
 backgroundMusic = Sound("sounds/main-theme.mp3")
 backgroundMusic.play(loop=True)
 # jumpSound = Sound("sounds/jump.flac")
@@ -145,6 +145,17 @@ def resetPlayer():
     enemy.attackTimer = 0
     slash.visible = False
     enemy.setArmAngle(0)
+    # Bring the alien back to life at its starting spot for this level
+    if app.level == 1:
+        enemy.centerX = enemyPlatform.centerX
+        enemy.bottom = enemyPlatform.top
+    else:
+        enemy.centerX = app.width // 2
+        enemy.bottom = platforms[0].top
+    enemy.dy = 0
+    enemy.health = enemy.maxHealth
+    enemy.isAlive = True
+    enemy.visible = True
 
 
 def tryStand():
@@ -238,6 +249,7 @@ def loadLevel(level):
     if level == 2:
         background = createBossBackground()
         background.toBack()
+        bossBattleMusic.play(loop=True)
 
     # Player starts on the left, the alien boss on the right
     player.centerX = app.width // 2
@@ -384,7 +396,8 @@ def onKeyPress(key):
         if player.sword.swingFrame is None and not player.sword.isSheathed:
             swordSound.play()
         player.sword.swing()
-
+    if key == "j":
+        loadLevel(2)
     if key == "down":
         if player.isCrouching:
             tryStand()

@@ -10,7 +10,7 @@ def createPlatforms(level=1):
                 700,
                 819,
                 120,
-                fill=gradient("forestGreen", "darkOliveGreen", start="top"),
+                fill=gradient("sienna", "saddleBrown", start="top"),
             )
         ]
     platforms = [
