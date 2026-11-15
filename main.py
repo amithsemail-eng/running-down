@@ -9,6 +9,7 @@ from healthbar import createHealthBar
 from bullet import createBullet
 from alien import createAlien
 from bossbackground import createBossBackground
+from boss import createBoss
 
 app.level = 1
 app.stepsPerSecond = 30
@@ -29,18 +30,25 @@ platforms = createPlatforms()
 deathScreen, deathMessage, winScreen, winMessage = createScreens(app.width, app.height)
 enemyPlatform = platforms[6]
 enemy = createAlien(enemyPlatform.centerX, enemyPlatform.top, scale=0.55)
-enemy.speed = 2.3
-enemy.dy = 0
-enemy.jumpPower = -20
-enemy.onGround = False
-enemy.groundPlatform = None
-enemy.direction = 1
-enemy.bottom = enemyPlatform.top - 60
-enemy.attackTimer = 0
-enemy.attackCooldown = 0
-enemy.maxHealth = 5000
-enemy.health = enemy.maxHealth
-enemy.isAlive = True
+
+
+def setUpEnemy(monster):
+    monster.speed = 2.3
+    monster.dy = 0
+    monster.jumpPower = -20
+    monster.onGround = False
+    monster.groundPlatform = None
+
+    monster.attackTimer = 0
+    monster.attackCooldown = 0
+    monster.maxHealth = 5000
+    monster.health = monster.maxHealth
+    monster.isAlive = True
+
+
+setUpEnemy(enemy)
+boss = createBoss(400, 400, scale=0.8)
+boss.visible = False
 slashSize = 2 * enemy.armReach
 slash = Arc(0, 0, slashSize, slashSize, 35, 125, fill="white", opacity=0, visible=False)
 chests = createChests()
@@ -227,6 +235,7 @@ def moveEnemyX(amount):
 
 
 def loadLevel(level):
+    global enemy
     app.level = level
 
     # Hide the old level
@@ -250,6 +259,12 @@ def loadLevel(level):
         background = createBossBackground()
         background.toBack()
         bossBattleMusic.play(loop=True)
+        backgroundMusic.pause()
+        enemy.visible = False
+        enemy = boss
+        setUpEnemy(enemy)
+        slash.width = 2 * enemy.armReach
+        slash.height = 2 * enemy.armReach
 
     # Player starts on the left, the alien boss on the right
     player.centerX = app.width // 2
@@ -522,6 +537,7 @@ def onStep():
             loadLevel(2)
         if app.level == 2 and not enemy.isAlive:
             winner()
+            bossBattleMusic.pause()
     if app.boostTimer > 0:
         app.boostTimer -= 1
         if app.boostTimer == 0:
