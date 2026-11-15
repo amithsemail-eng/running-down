@@ -11,7 +11,8 @@ def createPlatforms(level=1):
                 819,
                 120,
                 fill=gradient("sienna", "saddleBrown", start="top"),
-            )
+            ),
+            Rect(300, 560, 219, 20, fill="saddleBrown", visible=False),
         ]
     platforms = [
         Rect(0, 780, 260, 20, fill="crimson"),

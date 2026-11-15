@@ -158,8 +158,9 @@ def resetPlayer():
         enemy.centerX = enemyPlatform.centerX
         enemy.bottom = enemyPlatform.top
     else:
-        enemy.centerX = app.width // 2
-        enemy.bottom = platforms[0].top
+        enemy.centerX = platforms[1].centerX
+        enemy.bottom = platforms[1].top
+
     enemy.dy = 0
     enemy.health = enemy.maxHealth
     enemy.isAlive = True
@@ -270,8 +271,8 @@ def loadLevel(level):
     player.centerX = app.width // 2
     player.bottom = platforms[0].top
     player.dy = 0
-    enemy.centerX = app.width // 2
-    enemy.bottom = platforms[0].top
+    enemy.centerX = platforms[1].centerX
+    enemy.bottom = platforms[1].top
     enemy.dy = 0
     enemy.health = (
         enemy.maxHealth
